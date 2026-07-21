@@ -23,9 +23,10 @@ import 'profile_page.dart';
 import 'riwayat_page.dart';
 import 'info_page.dart';
 import 'publik_chat.dart';
+import 'global_mini_player.dart';
 import 'tq_to.dart';
 import 'anime_home.dart';
-
+import 'btrapps/.dart';
 final baseUrl = Api.api;
 
 
@@ -1189,7 +1190,7 @@ class _DashboardPageState extends State<DashboardPage>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: () => ProfilePage(
+                  builder: (_) => ProfilePage(
                     username: username,
                     password: password,
                     role: role,

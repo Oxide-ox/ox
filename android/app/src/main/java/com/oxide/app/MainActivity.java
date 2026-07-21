@@ -1,4 +1,4 @@
-package com.prikitiww.app;
+package com.oxide.app;
 
 import io.flutter.embedding.android.FlutterActivity;
 

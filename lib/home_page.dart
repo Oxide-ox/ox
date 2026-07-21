@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'btrapps/.dart';
-import 'global_mini_player.dart';
+
 
 final baseUrl = Api.api;
 
@@ -698,7 +698,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
           ),
-          const Positioned(left: 0, right: 0, bottom: 0, child: GlobalMiniPlayer()),
         ],
       ),
     );

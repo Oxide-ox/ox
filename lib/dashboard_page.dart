@@ -23,9 +23,11 @@ import 'profile_page.dart';
 import 'riwayat_page.dart';
 import 'info_page.dart';
 import 'publik_chat.dart';
-import 'global_mini_player.dart';
 import 'tq_to.dart';
 import 'anime_home.dart';
+
+final baseUrl = Api.api;
+
 
 class DashboardPage extends StatefulWidget {
   final String userId;
@@ -1332,12 +1334,6 @@ class _DashboardPageState extends State<DashboardPage>
                 opacity: _animation,
                 child: _selectedPage,
               ),
-            ),
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: GlobalMiniPlayer(),
             ),
           ],
         ),

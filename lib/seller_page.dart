@@ -19,7 +19,7 @@ class _SellerPageState extends State<SellerPage> {
   List<dynamic> filteredList = [];
 
   // Role Options untuk List
-  final List<String> roleOptions = ['member'];
+  final List<String> roleOptions = ['member', 'vip'];
   String selectedRole = 'member';
 
   int currentPage = 1;

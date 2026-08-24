@@ -20,7 +20,7 @@ class _AdminPageState extends State<AdminPage> {
   List<dynamic> filteredList = [];
 
   // Role Options: Hanya Reseller & Member
-  final List<String> roleOptions = ['reseller', 'member'];
+  final List<String> roleOptions = ['reseller', 'vip', 'member'];
   String selectedRole = 'member';
 
   int currentPage = 1;

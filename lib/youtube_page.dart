@@ -1,9 +1,3 @@
-// =============================================================
-// yt.dart
-// Aplikasi Flutter YouTube Player - Tema Cyberpunk (Single File)
-// Updated: Custom Color Theme, Double-Tap Seek (±10s), & Fullscreen Mode
-// =============================================================
-
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -18,10 +12,8 @@ import 'package:video_player/video_player.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-// =============================================================
-// TOP-LEVEL CALLBACK - Wajib untuk flutter_downloader
-// =============================================================
 @pragma('vm:entry-point')
 void downloadCallback(String id, int status, int progress) {
   final SendPort? send = IsolateNameServer.lookupPortByName('downloader_send_port');
@@ -32,51 +24,42 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FlutterDownloader.initialize(debug: true, ignoreSsl: true);
   FlutterDownloader.registerCallback(downloadCallback);
-  
-  // Kunci orientasi awal ke Portrait
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-
   runApp(const YoutubeCyberApp());
 }
 
 // =============================================================
-// 1. CYBER THEME - Palet Warna Baru (Neon Magenta & Gold Accent)
+// GOTHIC MAGENTA THEME
 // =============================================================
 class CyberTheme {
-  static const Color bgPurpleDark = Color(0xFF0F0C1B);
-  static const Color bgBlack = Color(0xFF05030A);
-  static const Color cardPurple = Color(0xFF1E1430);
-  
-  // Warna Utama Baru: Neon Magenta / Pink & Gold Accent
-  static const Color neonPink = Color(0xFFFF007F);
-  static const Color neonGold = Color(0xFFFFD700);
+  static const Color bgDark = Color(0xFF090212);
+  static const Color bgDeepPurple = Color(0xFF140526);
+  static const Color cardPurple = Color(0xFF120722);
+  static const Color neonMagenta = Color(0xFFE6007E);
+  static const Color neonPurple = Color(0xFF8E00C7);
   static const Color white = Color(0xFFFFFFFF);
-  static const Color greyText = Color(0xFFB5A8C8);
+  static const Color greyText = Color(0xFFB0A8C0);
 
   static const LinearGradient bgGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [bgPurpleDark, bgBlack],
+    colors: [bgDark, bgDeepPurple, bgDark],
   );
 
   static BoxDecoration cardDecoration = BoxDecoration(
     color: cardPurple,
     borderRadius: BorderRadius.circular(14),
-    border: Border.all(color: neonPink.withOpacity(0.7), width: 1.2),
+    border: Border.all(color: neonPurple.withOpacity(0.6), width: 1.2),
     boxShadow: [
-      BoxShadow(color: neonPink.withOpacity(0.25), blurRadius: 12, spreadRadius: 1),
+      BoxShadow(color: neonMagenta.withOpacity(0.25), blurRadius: 12, spreadRadius: 1),
     ],
   );
 
   static BoxDecoration glowButton = BoxDecoration(
     color: cardPurple,
     borderRadius: BorderRadius.circular(50),
-    border: Border.all(color: neonPink, width: 1.5),
+    border: Border.all(color: neonMagenta, width: 1.5),
     boxShadow: [
-      BoxShadow(color: neonPink.withOpacity(0.6), blurRadius: 16, spreadRadius: 2),
+      BoxShadow(color: neonMagenta.withOpacity(0.6), blurRadius: 16, spreadRadius: 2),
     ],
   );
 
@@ -89,27 +72,24 @@ class CyberTheme {
   );
 
   static const TextStyle neonLabel = TextStyle(
-    color: neonPink, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1.0,
+    color: neonMagenta, fontWeight: FontWeight.bold, fontSize: 13, letterSpacing: 1.0,
   );
 
   static ThemeData themeData = ThemeData(
-    scaffoldBackgroundColor: bgPurpleDark,
+    scaffoldBackgroundColor: bgDark,
     fontFamily: 'Roboto',
-    colorScheme: const ColorScheme.dark(primary: neonPink, secondary: neonGold),
+    colorScheme: const ColorScheme.dark(primary: neonMagenta, secondary: neonPurple),
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      iconTheme: IconThemeData(color: neonPink),
+      iconTheme: IconThemeData(color: neonMagenta),
       titleTextStyle: TextStyle(
-        color: neonPink, fontWeight: FontWeight.bold, fontSize: 20, letterSpacing: 1.2,
+        color: neonMagenta, fontWeight: FontWeight.bold, fontSize: 20, letterSpacing: 1.2,
       ),
     ),
   );
 }
 
-// =============================================================
-// 2. VIDEO MODEL
-// =============================================================
 class VideoModel {
   final String title;
   final String channel;
@@ -142,14 +122,53 @@ class VideoModel {
       duration: pick(['duration'], '00:00'),
       thumbnail: pick(['imageUrl', 'thumbnail'], ''),
       views: pick(['views', 'viewCount'], '-'),
-      url: pick(['link', 'url'], ''),
+      url: pick(['link', 'url', 'source'], ''),
     );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'title': title,
+    'channel': channel,
+    'duration': duration,
+    'imageUrl': thumbnail,
+    'views': views,
+    'link': url,
+  };
+}
+
+class HistoryManager {
+  static const String _key = 'yt_watch_history_v1';
+
+  static Future<List<VideoModel>> getHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? raw = prefs.getString(_key);
+    if (raw == null) return [];
+    try {
+      final List<dynamic> decoded = jsonDecode(raw);
+      return decoded.map((e) => VideoModel.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  static Future<void> addHistory(VideoModel video) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<VideoModel> history = await getHistory();
+    history.removeWhere((item) => item.url == video.url);
+    history.insert(0, video);
+    if (history.length > 50) {
+      history = history.sublist(0, 50);
+    }
+    final raw = jsonEncode(history.map((e) => e.toJson()).toList());
+    await prefs.setString(_key, raw);
+  }
+
+  static Future<void> clearHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_key);
   }
 }
 
-// =============================================================
-// APP ROOT
-// =============================================================
 class YoutubeCyberApp extends StatelessWidget {
   const YoutubeCyberApp({super.key});
 
@@ -157,16 +176,13 @@ class YoutubeCyberApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'YouTube Player Cyberpunk',
+      title: 'YouTube Player',
       theme: CyberTheme.themeData,
       home: const HomeScreen(),
     );
   }
 }
 
-// =============================================================
-// 3. HOME SCREEN
-// =============================================================
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -214,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
           .toList();
 
       setState(() {
-        _videos = parsed.take(5).toList();
+        _videos = parsed;
         _loading = false;
         if (_videos.isEmpty) {
           _error = 'Tidak ada hasil ditemukan untuk "$query"';
@@ -240,7 +256,22 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: const BoxDecoration(gradient: CyberTheme.bgGradient),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: AppBar(title: const Text('⚡ YOUTUBE CYBER'), centerTitle: true),
+        appBar: AppBar(
+          title: const Text('⚡ YouTube PLAYER'),
+          centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.history_rounded, color: CyberTheme.neonMagenta),
+              tooltip: 'Riwayat Tontonan',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                );
+              },
+            ),
+          ],
+        ),
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -262,9 +293,9 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: CyberTheme.cardPurple,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: CyberTheme.neonPink, width: 1.4),
+        border: Border.all(color: CyberTheme.neonMagenta, width: 1.4),
         boxShadow: [
-          BoxShadow(color: CyberTheme.neonPink.withOpacity(0.4), blurRadius: 10, spreadRadius: 1),
+          BoxShadow(color: CyberTheme.neonMagenta.withOpacity(0.4), blurRadius: 10, spreadRadius: 1),
         ],
       ),
       child: TextField(
@@ -275,9 +306,9 @@ class _HomeScreenState extends State<HomeScreen> {
         decoration: InputDecoration(
           hintText: 'Cari video di YouTube...',
           hintStyle: const TextStyle(color: CyberTheme.greyText),
-          prefixIcon: const Icon(Icons.search, color: CyberTheme.neonPink),
+          prefixIcon: const Icon(Icons.search, color: CyberTheme.neonMagenta),
           suffixIcon: IconButton(
-            icon: const Icon(Icons.arrow_forward, color: CyberTheme.neonPink),
+            icon: const Icon(Icons.arrow_forward, color: CyberTheme.neonMagenta),
             onPressed: () => _searchVideos(_searchCtrl.text),
           ),
           border: InputBorder.none,
@@ -289,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildBody() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: CyberTheme.neonPink));
+      return const Center(child: CircularProgressIndicator(color: CyberTheme.neonMagenta));
     }
     if (_error != null) {
       return Center(
@@ -314,16 +345,117 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+class HistoryScreen extends StatefulWidget {
+  const HistoryScreen({super.key});
+
+  @override
+  State<HistoryScreen> createState() => _HistoryScreenState();
+}
+
+class _HistoryScreenState extends State<HistoryScreen> {
+  List<VideoModel> _history = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    final data = await HistoryManager.getHistory();
+    if (mounted) {
+      setState(() {
+        _history = data;
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _clearAll() async {
+    await HistoryManager.clearHistory();
+    _loadHistory();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(gradient: CyberTheme.bgGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: const Text('📜 RIWAYAT TONTONAN'),
+          actions: [
+            if (_history.isNotEmpty)
+              IconButton(
+                icon: const Icon(Icons.delete_sweep_rounded, color: Colors.redAccent),
+                tooltip: 'Hapus Riwayat',
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: CyberTheme.cardPurple,
+                      title: const Text('Hapus Riwayat?', style: TextStyle(color: Colors.white)),
+                      content: const Text('Semua riwayat tontonan akan dihapus permanen.', style: TextStyle(color: CyberTheme.greyText)),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Batal', style: TextStyle(color: CyberTheme.greyText)),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _clearAll();
+                          },
+                          child: const Text('Hapus', style: TextStyle(color: Colors.redAccent)),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+        body: SafeArea(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator(color: CyberTheme.neonMagenta))
+              : _history.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'Belum ada riwayat tontonan 🎬',
+                        style: TextStyle(color: CyberTheme.greyText),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: _history.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) => _VideoCard(
+                        video: _history[index],
+                        onTapExtra: _loadHistory,
+                      ),
+                    ),
+        ),
+      ),
+    );
+  }
+}
+
 class _VideoCard extends StatelessWidget {
   final VideoModel video;
-  const _VideoCard({required this.video});
+  final VoidCallback? onTapExtra;
+
+  const _VideoCard({required this.video, this.onTapExtra});
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(14),
-      onTap: () {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => PlayerScreen(video: video)));
+      onTap: () async {
+        await HistoryManager.addHistory(video);
+        if (!context.mounted) return;
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => PlayerScreen(video: video)));
+        if (onTapExtra != null) onTapExtra!();
       },
       child: Container(
         padding: const EdgeInsets.all(10),
@@ -339,12 +471,12 @@ class _VideoCard extends StatelessWidget {
                 height: 80,
                 fit: BoxFit.cover,
                 placeholder: (_, __) => Container(
-                  width: 120, height: 80, color: CyberTheme.bgBlack,
-                  child: const Icon(Icons.movie, color: CyberTheme.neonPink),
+                  width: 120, height: 80, color: CyberTheme.bgDark,
+                  child: const Icon(Icons.movie, color: CyberTheme.neonMagenta),
                 ),
                 errorWidget: (_, __, ___) => Container(
-                  width: 120, height: 80, color: CyberTheme.bgBlack,
-                  child: const Icon(Icons.broken_image, color: CyberTheme.neonPink),
+                  width: 120, height: 80, color: CyberTheme.bgDark,
+                  child: const Icon(Icons.broken_image, color: CyberTheme.neonMagenta),
                 ),
               ),
             ),
@@ -359,12 +491,12 @@ class _VideoCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.timer, size: 12, color: CyberTheme.neonPink),
+                      const Icon(Icons.timer, size: 12, color: CyberTheme.neonMagenta),
                       const SizedBox(width: 4),
                       Text(video.duration, style: CyberTheme.subStyle),
                       if (video.views != '-') ...[
                         const SizedBox(width: 12),
-                        const Icon(Icons.remove_red_eye, size: 12, color: CyberTheme.neonPink),
+                        const Icon(Icons.remove_red_eye, size: 12, color: CyberTheme.neonMagenta),
                         const SizedBox(width: 4),
                         Expanded(child: Text(video.views, style: CyberTheme.subStyle, overflow: TextOverflow.ellipsis)),
                       ],
@@ -380,9 +512,6 @@ class _VideoCard extends StatelessWidget {
   }
 }
 
-// =============================================================
-// 4. PLAYER SCREEN (Dengan Double Tap Seek & Fullscreen Toggle)
-// =============================================================
 class PlayerScreen extends StatefulWidget {
   final VideoModel video;
   const PlayerScreen({super.key, required this.video});
@@ -399,11 +528,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   String? _errorMsg;
   String? _resolvedMp4Url;
   double _speed = 1.0;
-
-  // Visual Overlay Indikator Seek (+10 / -10)
-  bool _showSeekForwardOverlay = false;
-  bool _showSeekBackwardOverlay = false;
-  Timer? _seekOverlayTimer;
+  bool _isFullScreen = false;
 
   final ReceivePort _port = ReceivePort();
   String? _taskId;
@@ -510,17 +635,31 @@ class _PlayerScreenState extends State<PlayerScreen> {
     }
   }
 
+  void _toggleFullScreen() {
+    setState(() {
+      _isFullScreen = !_isFullScreen;
+    });
+
+    if (_isFullScreen) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.landscapeLeft,
+        DeviceOrientation.landscapeRight,
+      ]);
+    } else {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      SystemChrome.setPreferredOrientations([
+        DeviceOrientation.portraitUp,
+      ]);
+    }
+  }
+
   @override
   void dispose() {
-    _seekOverlayTimer?.cancel();
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     _controller?.dispose();
     IsolateNameServer.removePortNameMapping('downloader_send_port');
-    // Pastikan orientasi kembali ke normal saat halaman ditutup
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     super.dispose();
   }
 
@@ -533,75 +672,6 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void _changeSpeed(double speed) {
     setState(() => _speed = speed);
     _controller?.setPlaybackSpeed(speed);
-  }
-
-  // Seek maju +10 detik
-  void _seekForward() {
-    final c = _controller;
-    if (c == null || !c.value.isInitialized) return;
-    final currentPos = c.value.position;
-    final maxDuration = c.value.duration;
-    final newPos = currentPos + const Duration(seconds: 10);
-    c.seekTo(newPos > maxDuration ? maxDuration : newPos);
-
-    _triggerSeekOverlay(isForward: true);
-  }
-
-  // Seek mundur -10 detik
-  void _seekBackward() {
-    final c = _controller;
-    if (c == null || !c.value.isInitialized) return;
-    final currentPos = c.value.position;
-    final newPos = currentPos - const Duration(seconds: 10);
-    c.seekTo(newPos < Duration.zero ? Duration.zero : newPos);
-
-    _triggerSeekOverlay(isForward: false);
-  }
-
-  void _triggerSeekOverlay({required bool isForward}) {
-    _seekOverlayTimer?.cancel();
-    setState(() {
-      if (isForward) {
-        _showSeekForwardOverlay = true;
-        _showSeekBackwardOverlay = false;
-      } else {
-        _showSeekBackwardOverlay = true;
-        _showSeekForwardOverlay = false;
-      }
-    });
-
-    _seekOverlayTimer = Timer(const Duration(milliseconds: 700), () {
-      if (mounted) {
-        setState(() {
-          _showSeekForwardOverlay = false;
-          _showSeekBackwardOverlay = false;
-        });
-      }
-    });
-  }
-
-  // Buka Mode Fullscreen
-  Future<void> _openFullScreen() async {
-    final c = _controller;
-    if (c == null || !c.value.isInitialized) return;
-
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => FullScreenPlayerPage(
-          controller: c,
-          onSeekForward: _seekForward,
-          onSeekBackward: _seekBackward,
-        ),
-      ),
-    );
-
-    // Kembalikan ke UI Portrait
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
 
   Future<void> _startDownload() async {
@@ -665,6 +735,63 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isFullScreen) {
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _toggleFullScreen();
+        },
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                _controller != null && _controller!.value.isInitialized
+                    ? AspectRatio(
+                        aspectRatio: _controller!.value.aspectRatio,
+                        child: VideoPlayer(_controller!),
+                      )
+                    : const CircularProgressIndicator(color: CyberTheme.neonMagenta),
+                Positioned(
+                  top: 20,
+                  right: 20,
+                  child: IconButton(
+                    icon: const Icon(Icons.fullscreen_exit, color: CyberTheme.neonMagenta, size: 32),
+                    onPressed: _toggleFullScreen,
+                  ),
+                ),
+                GestureDetector(
+                  onTap: _togglePlayPause,
+                  behavior: HitTestBehavior.translucent,
+                  child: Container(
+                    color: Colors.transparent,
+                    width: double.infinity,
+                    height: double.infinity,
+                  ),
+                ),
+                if (_controller != null && !_controller!.value.isPlaying)
+                  GestureDetector(
+                    onTap: _togglePlayPause,
+                    child: Container(
+                      decoration: CyberTheme.glowButton,
+                      padding: const EdgeInsets.all(14),
+                      child: const Icon(Icons.play_arrow, color: CyberTheme.neonMagenta, size: 40),
+                    ),
+                  ),
+                Positioned(
+                  bottom: 10,
+                  left: 20,
+                  right: 20,
+                  child: _buildProgressBar(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return Container(
       decoration: const BoxDecoration(gradient: CyberTheme.bgGradient),
       child: Scaffold(
@@ -701,8 +828,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: CyberTheme.neonPink, width: 1.4),
-        boxShadow: [BoxShadow(color: CyberTheme.neonPink.withOpacity(0.35), blurRadius: 14, spreadRadius: 1)],
+        border: Border.all(color: CyberTheme.neonMagenta, width: 1.4),
+        boxShadow: [BoxShadow(color: CyberTheme.neonMagenta.withOpacity(0.35), blurRadius: 14, spreadRadius: 1)],
       ),
       clipBehavior: Clip.hardEdge,
       child: AspectRatio(
@@ -723,7 +850,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     child: const Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircularProgressIndicator(color: CyberTheme.neonPink),
+                        CircularProgressIndicator(color: CyberTheme.neonMagenta),
                         SizedBox(height: 10),
                         Text('Menyiapkan video...', style: TextStyle(color: CyberTheme.greyText)),
                       ],
@@ -733,83 +860,28 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     alignment: Alignment.center,
                     children: [
                       VideoPlayer(_controller!),
-
-                      // Deteksi Gestur Ketuk 2x Kiri (-10s) & Kanan (+10s)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.translucent,
-                              onDoubleTap: _seekBackward,
-                              child: Container(color: Colors.transparent),
-                            ),
-                          ),
-                          Expanded(
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.translucent,
-                              onDoubleTap: _seekForward,
-                              child: Container(color: Colors.transparent),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Indikator Overlay Mundur -10 detik
-                      if (_showSeekBackwardOverlay)
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Container(
-                            margin: const EdgeInsets.only(left: 20),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(30)),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.fast_rewind, color: CyberTheme.neonPink, size: 28),
-                                SizedBox(width: 4),
-                                Text('-10s', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                      // Indikator Overlay Maju +10 detik
-                      if (_showSeekForwardOverlay)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 20),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(30)),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text('+10s', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                                SizedBox(width: 4),
-                                Icon(Icons.fast_forward, color: CyberTheme.neonPink, size: 28),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                      // Tombol Play saat Pause
-                      if (!_controller!.value.isPlaying && !_showSeekForwardOverlay && !_showSeekBackwardOverlay)
+                      if (!_controller!.value.isPlaying)
                         GestureDetector(
                           onTap: _togglePlayPause,
                           child: Container(
                             decoration: CyberTheme.glowButton,
                             padding: const EdgeInsets.all(14),
-                            child: const Icon(Icons.play_arrow, color: CyberTheme.neonPink, size: 36),
+                            child: const Icon(Icons.play_arrow, color: CyberTheme.neonMagenta, size: 36),
                           ),
                         ),
-
-                      // Tombol Fullscreen (Perbesar Video)
                       Positioned(
-                        right: 8,
                         bottom: 8,
-                        child: IconButton(
-                          icon: const Icon(Icons.fullscreen, color: CyberTheme.neonPink, size: 28),
-                          onPressed: _openFullScreen,
+                        right: 8,
+                        child: GestureDetector(
+                          onTap: _toggleFullScreen,
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.fullscreen, color: CyberTheme.neonMagenta, size: 22),
+                          ),
                         ),
                       ),
                     ],
@@ -829,10 +901,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
       children: [
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            activeTrackColor: CyberTheme.neonPink,
+            activeTrackColor: CyberTheme.neonMagenta,
             inactiveTrackColor: CyberTheme.cardPurple,
-            thumbColor: CyberTheme.neonPink,
-            overlayColor: CyberTheme.neonPink.withOpacity(0.2),
+            thumbColor: CyberTheme.neonMagenta,
+            overlayColor: CyberTheme.neonMagenta.withOpacity(0.2),
             trackHeight: 3,
           ),
           child: Slider(
@@ -858,28 +930,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   Widget _buildControls() {
     final isPlaying = _controller?.value.isPlaying ?? false;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        IconButton(
-          icon: const Icon(Icons.replay_10, color: CyberTheme.neonPink, size: 32),
-          onPressed: _seekBackward,
+    return Center(
+      child: GestureDetector(
+        onTap: _togglePlayPause,
+        child: Container(
+          decoration: CyberTheme.glowButton,
+          padding: const EdgeInsets.all(18),
+          child: Icon(isPlaying ? Icons.pause : Icons.play_arrow, color: CyberTheme.neonMagenta, size: 34),
         ),
-        const SizedBox(width: 20),
-        GestureDetector(
-          onTap: _togglePlayPause,
-          child: Container(
-            decoration: CyberTheme.glowButton,
-            padding: const EdgeInsets.all(18),
-            child: Icon(isPlaying ? Icons.pause : Icons.play_arrow, color: CyberTheme.neonPink, size: 34),
-          ),
-        ),
-        const SizedBox(width: 20),
-        IconButton(
-          icon: const Icon(Icons.forward_10, color: CyberTheme.neonPink, size: 32),
-          onPressed: _seekForward,
-        ),
-      ],
+      ),
     );
   }
 
@@ -899,16 +958,16 @@ class _PlayerScreenState extends State<PlayerScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: selected ? CyberTheme.neonPink : CyberTheme.cardPurple,
+                  color: selected ? CyberTheme.neonMagenta : CyberTheme.cardPurple,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: CyberTheme.neonPink, width: 1.2),
+                  border: Border.all(color: CyberTheme.neonMagenta, width: 1.2),
                   boxShadow: selected
-                      ? [BoxShadow(color: CyberTheme.neonPink.withOpacity(0.6), blurRadius: 10, spreadRadius: 1)]
+                      ? [BoxShadow(color: CyberTheme.neonMagenta.withOpacity(0.6), blurRadius: 10, spreadRadius: 1)]
                       : [],
                 ),
                 child: Text(
                   '${s}x',
-                  style: TextStyle(color: selected ? CyberTheme.bgBlack : CyberTheme.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: selected ? CyberTheme.bgDark : CyberTheme.white, fontWeight: FontWeight.bold),
                 ),
               ),
             );
@@ -933,13 +992,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
             decoration: BoxDecoration(
               color: CyberTheme.cardPurple,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: CyberTheme.neonPink, width: 1.3),
-              boxShadow: [BoxShadow(color: CyberTheme.neonPink.withOpacity(0.35), blurRadius: 10, spreadRadius: 1)],
+              border: Border.all(color: CyberTheme.neonMagenta, width: 1.3),
+              boxShadow: [BoxShadow(color: CyberTheme.neonMagenta.withOpacity(0.35), blurRadius: 10, spreadRadius: 1)],
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.download, color: CyberTheme.neonPink),
+                const Icon(Icons.download, color: CyberTheme.neonMagenta),
                 const SizedBox(width: 8),
                 Text(
                   _downloadLabel(),
@@ -957,150 +1016,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
               value: _downloadProgress / 100,
               minHeight: 8,
               backgroundColor: CyberTheme.cardPurple,
-              valueColor: const AlwaysStoppedAnimation(CyberTheme.neonPink),
+              valueColor: const AlwaysStoppedAnimation(CyberTheme.neonMagenta),
             ),
           ),
         ],
       ],
-    );
-  }
-}
-
-// =============================================================
-// 5. FULLSCREEN PLAYER PAGE (Halaman Pemutar Video Layar Penuh)
-// =============================================================
-class FullScreenPlayerPage extends StatefulWidget {
-  final VideoPlayerController controller;
-  final VoidCallback onSeekForward;
-  final VoidCallback onSeekBackward;
-
-  const FullScreenPlayerPage({
-    super.key,
-    required this.controller,
-    required this.onSeekForward,
-    required this.onSeekBackward,
-  });
-
-  @override
-  State<FullScreenPlayerPage> createState() => _FullScreenPlayerPageState();
-}
-
-class _FullScreenPlayerPageState extends State<FullScreenPlayerPage> {
-  bool _showControls = true;
-  Timer? _hideControlsTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    // Rotasi layar ke Landscape & sembunyikan status bar
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
-    _startHideControlsTimer();
-  }
-
-  void _startHideControlsTimer() {
-    _hideControlsTimer?.cancel();
-    _hideControlsTimer = Timer(const Duration(seconds: 3), () {
-      if (mounted) setState(() => _showControls = false);
-    });
-  }
-
-  void _toggleControls() {
-    setState(() => _showControls = !_showControls);
-    if (_showControls) _startHideControlsTimer();
-  }
-
-  @override
-  void dispose() {
-    _hideControlsTimer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: GestureDetector(
-        onTap: _toggleControls,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Center(
-              child: AspectRatio(
-                aspectRatio: widget.controller.value.aspectRatio,
-                child: VideoPlayer(widget.controller),
-              ),
-            ),
-
-            // Deteksi Ketuk 2x Kiri / Kanan pada Mode Fullscreen
-            Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onDoubleTap: () {
-                      widget.onSeekBackward();
-                      _startHideControlsTimer();
-                    },
-                    child: Container(color: Colors.transparent),
-                  ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.translucent,
-                    onDoubleTap: () {
-                      widget.onSeekForward();
-                      _startHideControlsTimer();
-                    },
-                    child: Container(color: Colors.transparent),
-                  ),
-                ),
-              ],
-            ),
-
-            // Control Overlay (Play/Pause, Exit Fullscreen)
-            if (_showControls) ...[
-              Container(color: Colors.black38),
-              Positioned(
-                top: 16,
-                left: 16,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: CyberTheme.neonPink, size: 28),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    widget.controller.value.isPlaying ? widget.controller.pause() : widget.controller.play();
-                  });
-                  _startHideControlsTimer();
-                },
-                child: Container(
-                  decoration: CyberTheme.glowButton,
-                  padding: const EdgeInsets.all(16),
-                  child: Icon(
-                    widget.controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: CyberTheme.neonPink,
-                    size: 40,
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: 16,
-                right: 16,
-                child: IconButton(
-                  icon: const Icon(Icons.fullscreen_exit, color: CyberTheme.neonPink, size: 30),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
     );
   }
 }

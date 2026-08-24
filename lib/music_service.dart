@@ -1,83 +1,63 @@
-import 'package:audio_service/audio_service.dart';
+import 'dart:async';
 import 'package:just_audio/just_audio.dart';
 
-class AudioPlayerHandler extends BaseAudioHandler with SeekHandler {
-  final _player = AudioPlayer();
-
-  AudioPlayerHandler() {
-    // Sync status pemutar audio dengan AudioService (Notifikasi Sistem)
-    _player.playbackEventStream.listen((PlaybackEvent event) {
-      final playing = _player.playing;
-      playbackState.add(playbackState.value.copyWith(
-        controls: [
-          MediaControl.skipToPrevious,
-          if (playing) MediaControl.pause else MediaControl.play,
-          MediaControl.stop,
-          MediaControl.skipToNext,
-        ],
-        systemActions: const {
-          MediaAction.seek,
-        },
-        androidCompactActionIndices: const [0, 1, 3],
-        processingState: const {
-          ProcessingState.idle: AudioProcessingState.idle,
-          ProcessingState.loading: AudioProcessingState.loading,
-          ProcessingState.buffering: AudioProcessingState.buffering,
-          ProcessingState.ready: AudioProcessingState.ready,
-          ProcessingState.completed: AudioProcessingState.completed,
-        }[_player.processingState]!,
-        playing: playing,
-        updatePosition: _player.position,
-        bufferedPosition: _player.bufferedPosition,
-        speed: _player.speed,
-        queueIndex: event.currentIndex,
-      ));
-    });
-  }
-
-  AudioPlayer get player => _player;
-
-  Future<void> playSong(String url, String title, String artist, String artworkUrl) async {
-    final mediaItem = MediaItem(
-      id: url,
-      album: "Spotify Cyber",
-      title: title,
-      artist: artist,
-      artUri: Uri.tryParse(artworkUrl),
-    );
-    this.mediaItem.add(mediaItem);
-
-    await _player.setUrl(url);
-    await _player.play();
-  }
-
-  @override
-  Future<void> play() => _player.play();
-
-  @override
-  Future<void> pause() => _player.pause();
-
-  @override
-  Future<void> stop() => _player.stop();
-
-  @override
-  Future<void> seek(Duration position) => _player.seek(position);
-}
-
 class MusicService {
-  static late AudioPlayerHandler _audioHandler;
+  MusicService._();
 
-  static AudioPlayerHandler get handler => _audioHandler;
-  static AudioPlayer get player => _audioHandler.player;
+  static final AudioPlayer player = AudioPlayer();
 
-  static Future<void> init() async {
-    _audioHandler = await AudioService.init(
-      builder: () => AudioPlayerHandler(),
-      config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.oxide.app',
-        androidNotificationChannelName: 'Music Playback',
-        androidNotificationOngoing: true,
-      ),
-    );
+  static final StreamController<void> _controller =
+      StreamController<void>.broadcast();
+
+  static Stream<void> get stateStream =>
+      _controller.stream;
+
+  static String currentTitle = "Tidak ada lagu";
+  static String currentArtist = "";
+  static String currentImage = "";
+
+  static Future<void> playSong({
+    required String url,
+    required String title,
+    String artist = "",
+    String image = "",
+  }) async {
+    currentTitle = title;
+    currentArtist = artist;
+    currentImage = image;
+
+    await player.setUrl(url);
+    await player.play();
+
+    _controller.add(null);
   }
+
+  static Future<void> pause() async {
+    await player.pause();
+    _controller.add(null);
+  }
+
+  static Future<void> resume() async {
+    await player.play();
+    _controller.add(null);
+  }
+
+  static Future<void> stop() async {
+    await player.stop();
+
+    currentTitle = "Tidak ada lagu";
+    currentArtist = "";
+    currentImage = "";
+
+    _controller.add(null);
+  }
+
+  static bool get isPlaying =>
+      player.playing;
+
+  static Stream<Duration> get positionStream =>
+      player.positionStream;
+
+  static Stream<Duration?> get durationStream =>
+      player.durationStream;
 }

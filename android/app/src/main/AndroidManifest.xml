@@ -39,7 +39,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Service untuk Background Audio Playback -->
+        <!-- Service untuk Background Audio Playback
         <service 
             android:name="com.ryanheise.audioservice.AudioService"
             android:foregroundServiceType="mediaPlayback"
@@ -49,14 +49,14 @@
             </intent-filter>
         </service>
 
-        <!-- Receiver untuk Tombol Media (Headset / Notification Control) -->
-        <receiver 
+        <!--Receiver untuk Tombol Media (Headset / Notification Control) -->
+      <!--  <receiver 
             android:name="com.ryanheise.audioservice.MediaButtonReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
-        </receiver>
+        </receiver>  -->
 
         <!-- Meta-data Flutter Plugin Registrant -->
         <meta-data

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -7,12 +6,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:image_picker/image_picker.dart';
 
-// Imports internal aplikasi Anda
 import 'nik_check.dart';
+import 'staff_page.dart';
 import 'admin_page.dart';
 import 'owner_page.dart';
 import 'home_page.dart';
+import 'dev_page.dart';
 import 'seller_page.dart';
 import 'change_password_page.dart';
 import 'tools_gateway.dart';
@@ -23,12 +24,25 @@ import 'profile_page.dart';
 import 'riwayat_page.dart';
 import 'info_page.dart';
 import 'publik_chat.dart';
-import 'global_mini_player.dart';
 import 'tq_to.dart';
 import 'anime_home.dart';
 import 'btrapps/.dart';
+
 final baseUrl = Api.api;
 
+// =============================================================================
+// KONSTANTA WARNA TEMA GOTHIC MAGENTA & PURPLE
+// =============================================================================
+class AppTheme {
+  static const Color bgDark = Color(0xFF090212);
+  static const Color bgGradientBottom = Color(0xFF140526);
+  static Color cardBg = const Color(0xFF17092C).withOpacity(0.85);
+  static Color cardDarker = const Color(0xFF0F0518);
+  static const Color primaryMagenta = Color(0xFFE6007E);
+  static const Color secondaryPurple = Color(0xFF8E00C7);
+  static const Color whiteText = Colors.white;
+  static const Color grayText = Color(0xFFA0A0AB);
+}
 
 class DashboardPage extends StatefulWidget {
   final String userId;
@@ -82,31 +96,12 @@ class _DashboardPageState extends State<DashboardPage>
   int onlineUsers = 0;
   int activeConnections = 0;
 
-  // Realtime Clock & Prayer Times via IP
-  Timer? _timer;
-  DateTime _now = DateTime.now();
-  Map<String, String> _prayerTimes = {};
-  String _nextPrayerName = "-";
-  String _timeUntilNextPrayer = "--:--:--";
-  bool _isLoadingPrayer = true;
-  String _locationName = "Mendeteksi lokasi...";
-
-  // PALET WARNA TEMA OXIDE (Deep Cosmic Violet & Metallic Silver)
-  final Color bgDark = const Color(0xFF080613);
-  final Color neonViolet = const Color(0xFF9D00FF);
-  final Color glowPurple = const Color(0xFF7A02C7);
-  final Color silverWhite = const Color(0xFFE2E8F0);
-  final Color silverAccent = const Color(0xFF94A3B8);
-  final Color cardGlass = const Color(0xFF130D2B).withOpacity(0.65);
-  final Color borderGlass = const Color(0xFF9D00FF).withOpacity(0.35);
-
-  final Color primaryPink = const Color(0xFF1C0B36);
-  final Color cardDark = const Color(0xFF140C2E);
-  final Color cardDarker = const Color(0xFF090418);
-  final Color primaryDark = const Color(0xFF040209);
-
-  late PageController _pageController;
+  final PageController _newsPageController = PageController();
   int _currentNewsIndex = 0;
+  final ImagePicker _picker = ImagePicker();
+
+  List<dynamic> _backendStories = [];
+  bool _isUploadingStory = false;
 
   @override
   void initState() {
@@ -127,131 +122,253 @@ class _DashboardPageState extends State<DashboardPage>
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
     _controller.forward();
 
-    _pageController = PageController();
-    _selectedPage = _buildNewsPage();
+    _selectedPage = _buildMainDashboardContent();
     _loadProfileImage();
     _initMenuVideo();
     _fetchDashboardStats();
-
-    // Start Clock Timer & Fetch Waktu Sholat via IP
-    _startClockTimer();
-    _fetchPrayerTimesViaIP();
+    _fetchStoriesFromBackend();
   }
 
-  void _startClockTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) {
-        setState(() {
-          _now = DateTime.now();
-          _calculateNextPrayer();
-        });
-      }
-    });
-  }
-
-  // --- DETEKSI LOKASI & SHOLAT OTOMATIS VIA IP INTERNET ---
-  Future<void> _fetchPrayerTimesViaIP() async {
+  // ---------------------------------------------------------------------------
+  // LOGIKA BACKEND STORY (MULTI-UPLOAD DENGAN VIDEO & GAMBAR SEPERTI WA)
+  // ---------------------------------------------------------------------------
+  Future<void> _fetchStoriesFromBackend() async {
     try {
-      final ipResponse = await http
-          .get(Uri.parse('https://ipapi.co/json/'))
-          .timeout(const Duration(seconds: 10));
-
-      if (ipResponse.statusCode == 200) {
-        final ipData = jsonDecode(ipResponse.body);
-        final double lat = (ipData['latitude'] as num).toDouble();
-        final double lon = (ipData['longitude'] as num).toDouble();
-        final String city = ipData['city'] ?? "Unknown City";
-        final String country = ipData['country_code'] ?? "ID";
-
-        if (mounted) {
-          setState(() {
-            _locationName = "$city, $country";
-          });
-        }
-
-        final prayerResponse = await http.get(
-          Uri.parse(
-            'https://api.aladhan.com/v1/timings?latitude=$lat&longitude=$lon&method=2',
-          ),
-        );
-
-        if (prayerResponse.statusCode == 200) {
-          final prayerData = jsonDecode(prayerResponse.body);
-          final timings = prayerData['data']['timings'];
-
+      final res = await http.get(Uri.parse('$baseUrl/api/stories'));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['success'] == true) {
           if (mounted) {
             setState(() {
-              _prayerTimes = {
-                'Subuh': timings['Fajr'],
-                'Dzuhur': timings['Dhuhr'],
-                'Ashar': timings['Asr'],
-                'Maghrib': timings['Maghrib'],
-                'Isya': timings['Isha'],
-              };
-              _isLoadingPrayer = false;
-              _calculateNextPrayer();
+              _backendStories = data['stories'] ?? [];
             });
           }
         }
-      } else {
-        _handleFallbackPrayer();
       }
     } catch (e) {
-      debugPrint("Error fetching location/prayer via IP: $e");
-      _handleFallbackPrayer();
+      debugPrint("Error fetch stories: $e");
     }
   }
 
-  void _handleFallbackPrayer() {
-    if (mounted) {
-      setState(() {
-        _locationName = "Indonesia";
-        _isLoadingPrayer = false;
-      });
-    }
-  }
+  // 🟢 BISA PILIH BANYAK GAMBAR/VIDEO SEKALIGUS (NUMPUK KANAN-KIRI SEPERTI WHATSAPP)
+  Future<void> _uploadStoryToBackend() async {
+    try {
+      final List<XFile> pickedFiles = await _picker.pickMultipleMedia();
+      if (pickedFiles.isEmpty) return;
 
-  void _calculateNextPrayer() {
-    if (_prayerTimes.isEmpty) return;
+      setState(() => _isUploadingStory = true);
 
-    DateTime today = DateTime.now();
-    DateTime? nextPrayerTime;
-    String nextName = "";
+      int successCount = 0;
 
-    _prayerTimes.forEach((name, timeStr) {
-      final parts = timeStr.split(':');
-      final hour = int.parse(parts[0]);
-      final minute = int.parse(parts[1]);
-      final prayerDateTime =
-          DateTime(today.year, today.month, today.day, hour, minute);
+      for (var file in pickedFiles) {
+        List<int> bytes = await file.readAsBytes();
+        String base64Data = base64Encode(bytes);
 
-      if (prayerDateTime.isAfter(today)) {
-        if (nextPrayerTime == null || prayerDateTime.isBefore(nextPrayerTime!)) {
-          nextPrayerTime = prayerDateTime;
-          nextName = name;
+        String mimeType = "image/png";
+        String pathLower = file.path.toLowerCase();
+        if (pathLower.endsWith('.mp4') ||
+            pathLower.endsWith('.mov') ||
+            pathLower.endsWith('.mkv') ||
+            pathLower.endsWith('.webm') ||
+            pathLower.endsWith('.avi')) {
+          mimeType = "video/mp4";
+        }
+
+        final res = await http.post(
+          Uri.parse('$baseUrl/api/story/add'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'username': username,
+            'image': 'data:$mimeType;base64,$base64Data',
+          }),
+        );
+
+        final data = jsonDecode(res.body);
+        if (data['success'] == true) {
+          successCount++;
         }
       }
-    });
 
-    if (nextPrayerTime == null) {
-      final parts = _prayerTimes['Subuh']!.split(':');
-      nextPrayerTime = DateTime(today.year, today.month, today.day + 1,
-          int.parse(parts[0]), int.parse(parts[1]));
-      nextName = 'Subuh';
+      if (mounted && successCount > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("$successCount Story berhasil dipublikasikan!"),
+            backgroundColor: AppTheme.primaryMagenta,
+          ),
+        );
+        _fetchStoriesFromBackend();
+      }
+    } catch (e) {
+      debugPrint("Error upload story: $e");
+    } finally {
+      if (mounted) setState(() => _isUploadingStory = false);
     }
+  }
 
-    final diff = nextPrayerTime!.difference(today);
-    final hours = diff.inHours.toString().padLeft(2, '0');
-    final minutes = (diff.inMinutes % 60).toString().padLeft(2, '0');
-    final seconds = (diff.inSeconds % 60).toString().padLeft(2, '0');
+  Map<String, List<dynamic>> _getGroupedStories() {
+    Map<String, List<dynamic>> grouped = {};
+    for (var story in _backendStories) {
+      String user = story['username'] ?? 'User';
+      grouped.putIfAbsent(user, () => []).add(story);
+    }
+    return grouped;
+  }
 
-    _nextPrayerName = nextName;
-    _timeUntilNextPrayer = "$hours:$minutes:$seconds";
+  // 🟢 DIALOG MULTI-STORY VIEWER (MENDUKUNG MULTI-SLIDE & AUTO PLAY VIDEO)
+  void _viewUserStories(String user, List<dynamic> userStories) {
+    int currentIndex = 0;
+    PageController pageController = PageController();
+
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 24),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.cardBg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppTheme.primaryMagenta, width: 1.5),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: List.generate(userStories.length, (idx) {
+                      return Expanded(
+                        child: Container(
+                          height: 3,
+                          margin: const EdgeInsets.symmetric(horizontal: 2),
+                          decoration: BoxDecoration(
+                            color: idx == currentIndex
+                                ? AppTheme.primaryMagenta
+                                : Colors.white24,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 10),
+
+                  Row(
+                    children: [
+                      const Icon(Icons.history_toggle_off_rounded,
+                          color: AppTheme.primaryMagenta, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        user,
+                        style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.pop(context),
+                      )
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  SizedBox(
+                    height: 380,
+                    child: PageView.builder(
+                      controller: pageController,
+                      itemCount: userStories.length,
+                      onPageChanged: (idx) {
+                        setModalState(() => currentIndex = idx);
+                      },
+                      itemBuilder: (context, idx) {
+                        final story = userStories[idx];
+                        String imgUrl = story['imageUrl'] ?? '';
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: SingleStoryMedia(url: imgUrl),
+                        );
+                      },
+                    ),
+                  ),
+
+                  if (userStories.length > 1) ...[
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back_ios,
+                              color: AppTheme.primaryMagenta, size: 18),
+                          onPressed: currentIndex > 0
+                              ? () => pageController.previousPage(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  )
+                              : null,
+                        ),
+                        Text(
+                          "${currentIndex + 1} / ${userStories.length}",
+                          style: const TextStyle(
+                              color: AppTheme.grayText, fontSize: 12),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.arrow_forward_ios,
+                              color: AppTheme.primaryMagenta, size: 18),
+                          onPressed: currentIndex < userStories.length - 1
+                              ? () => pageController.nextPage(
+                                    duration: const Duration(milliseconds: 300),
+                                    curve: Curves.easeInOut,
+                                  )
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // FOTO PROFIL LOCAL & DASHBOARD STATS
+  // ---------------------------------------------------------------------------
+  Future<void> _pickProfileImage() async {
+    try {
+      final XFile? pickedFile =
+          await _picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+      if (pickedFile != null) {
+        setState(() {
+          _profileImage = File(pickedFile.path);
+        });
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('profile_image_$username', pickedFile.path);
+      }
+    } catch (e) {
+      debugPrint("Gagal memilih gambar profil: $e");
+    }
+  }
+
+  Future<void> _loadProfileImage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final imagePath = prefs.getString('profile_image_$username');
+    if (imagePath != null && imagePath.isNotEmpty) {
+      if (File(imagePath).existsSync()) {
+        setState(() {
+          _profileImage = File(imagePath);
+        });
+      }
+    }
   }
 
   Future<void> _fetchDashboardStats() async {
     try {
-      final response = await http.get(Uri.parse('${Api.api}/api/dashboard-stats'));
+      final response =
+          await http.get(Uri.parse('${Api.api}/api/dashboard-stats?username=$username'));
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
@@ -263,16 +380,6 @@ class _DashboardPageState extends State<DashboardPage>
       }
     } catch (e) {
       debugPrint("Error fetch stats: $e");
-    }
-  }
-
-  Future<void> _loadProfileImage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final imagePath = prefs.getString('profile_image_$username');
-    if (imagePath != null && imagePath.isNotEmpty) {
-      setState(() {
-        _profileImage = File(imagePath);
-      });
     }
   }
 
@@ -299,7 +406,7 @@ class _DashboardPageState extends State<DashboardPage>
     setState(() {
       _bottomNavIndex = index;
       if (index == 0) {
-        _selectedPage = _buildNewsPage();
+        _selectedPage = _buildMainDashboardContent();
       } else if (index == 1) {
         _selectedPage = HomePage(
           username: username,
@@ -313,10 +420,11 @@ class _DashboardPageState extends State<DashboardPage>
         _selectedPage = InfoPage(sessionKey: sessionKey);
       } else if (index == 3) {
         _selectedPage = ToolsPage(
-            username: username,
-            sessionKey: sessionKey,
-            userRole: role,
-            listDoos: listDoos);
+          username: username,
+          sessionKey: sessionKey,
+          userRole: role,
+          listDoos: listDoos,
+        );
       }
     });
   }
@@ -329,492 +437,209 @@ class _DashboardPageState extends State<DashboardPage>
         _selectedPage = AdminPage(sessionKey: sessionKey);
       } else if (index == 3) {
         _selectedPage = OwnerPage(sessionKey: sessionKey, username: username);
+      } else if (index == 4) {
+        _selectedPage = StaffPage(sessionKey: sessionKey, username: username);
+      } else if (index == 5) {
+        _selectedPage = DevPage(sessionKey: sessionKey, username: username);
       }
     });
     Navigator.pop(context);
   }
 
-  Widget _buildNewsPage() {
-    final timeFormatted =
-        "${_now.hour.toString().padLeft(2, '0')}:${_now.minute.toString().padLeft(2, '0')}:${_now.second.toString().padLeft(2, '0')}";
-    final dateFormatted =
-        "${_now.day.toString().padLeft(2, '0')}/${_now.month.toString().padLeft(2, '0')}/${_now.year}";
-
+  // ===========================================================================
+  // TAMPILAN KONTEN DASHBOARD UTAMA
+  // ===========================================================================
+  Widget _buildMainDashboardContent() {
     return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 12),
+          _buildStorySection(),
+          const SizedBox(height: 18),
+          _buildNewsCarouselSection(),
+          const SizedBox(height: 20),
+          _buildDashboardUserCard(),
+          const SizedBox(height: 20),
+          _buildHorizontalQuickActions(),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
 
-          // CARD 1: JAM REAL-TIME & WAKTU SHOLAT VIA IP
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                color: cardGlass,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: borderGlass, width: 1.2),
-                boxShadow: [
-                  BoxShadow(
-                    color: neonViolet.withOpacity(0.15),
-                    blurRadius: 20,
-                    spreadRadius: -2,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
+  // 📱 1. SEKSI STORY (1 USER = 1 BUBBLE NUMPUK)
+  Widget _buildStorySection() {
+    final groupedStories = _getGroupedStories();
+
+    return SizedBox(
+      height: 95,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [
+          GestureDetector(
+            onTap: _isUploadingStory ? null : _uploadStoryToBackend,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 14),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Stack(
+                    alignment: Alignment.bottomRight,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.location_on_rounded,
-                                  color: neonViolet, size: 14),
-                              const SizedBox(width: 4),
-                              Text(
-                                _locationName,
-                                style: TextStyle(
-                                  color: silverAccent,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            dateFormatted,
-                            style: TextStyle(
-                              color: silverAccent.withOpacity(0.8),
-                              fontSize: 10,
-                            ),
-                          ),
-                        ],
+                      Container(
+                        width: 62,
+                        height: 62,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: AppTheme.primaryMagenta, width: 2),
+                        ),
+                        child: ClipOval(
+                          child: _isUploadingStory
+                              ? const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: CircularProgressIndicator(
+                                    color: AppTheme.primaryMagenta,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : _profileImage != null
+                                  ? Image.file(_profileImage!, fit: BoxFit.cover)
+                                  : Container(
+                                      color: AppTheme.cardDarker,
+                                      child: const Icon(Icons.person, color: Colors.white70),
+                                    ),
+                        ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: cardDarker.withOpacity(0.8),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: borderGlass),
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: AppTheme.primaryMagenta,
+                          shape: BoxShape.circle,
                         ),
-                        child: Text(
-                          timeFormatted,
-                          style: TextStyle(
-                            color: silverWhite,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'ShareTechMono',
-                            letterSpacing: 1.5,
-                            shadows: [
-                              Shadow(color: neonViolet, blurRadius: 10),
+                        child: const Icon(Icons.add, color: Colors.white, size: 16),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "Buat Story",
+                    style: TextStyle(
+                        color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          if (groupedStories.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 15),
+                child: Text(
+                  "Belum ada story",
+                  style: TextStyle(
+                      color: AppTheme.grayText.withOpacity(0.5), fontSize: 11),
+                ),
+              ),
+            )
+          else
+            ...groupedStories.keys.map((userKey) {
+              final userStories = groupedStories[userKey]!;
+              final latestStory = userStories.first;
+              final String img = latestStory['imageUrl'] ?? '';
+
+              return GestureDetector(
+                onTap: () => _viewUserStories(userKey, userStories),
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 14),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 62,
+                        height: 62,
+                        padding: const EdgeInsets.all(2.5),
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            colors: [
+                              AppTheme.primaryMagenta,
+                              AppTheme.secondaryPurple
                             ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Divider(color: borderGlass.withOpacity(0.3), height: 1),
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.access_time_filled_rounded,
-                              color: neonViolet, size: 16),
-                          const SizedBox(width: 6),
-                          Text(
-                            "Menuju $_nextPrayerName :",
-                            style: TextStyle(
-                                color: silverWhite,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600),
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            color: AppTheme.bgDark,
+                            shape: BoxShape.circle,
                           ),
-                        ],
+                          padding: const EdgeInsets.all(2),
+                          child: ClipOval(
+                            child: SingleStoryMedia(url: img),
+                          ),
+                        ),
                       ),
-                      Text(
-                        _timeUntilNextPrayer,
-                        style: TextStyle(
-                          color: neonViolet,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'ShareTechMono',
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: 62,
+                        child: Text(
+                          userKey,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: AppTheme.grayText, fontSize: 11),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  _isLoadingPrayer
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                              color: Color(0xFF9D00FF), strokeWidth: 2),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: _prayerTimes.entries.map((entry) {
-                            final isNext = entry.key == _nextPrayerName;
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: isNext
-                                    ? neonViolet.withOpacity(0.25)
-                                    : cardDarker.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                  color: isNext ? neonViolet : borderGlass,
-                                  width: isNext ? 1.5 : 0.8,
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    entry.key,
-                                    style: TextStyle(
-                                      color: isNext ? silverWhite : silverAccent,
-                                      fontSize: 10,
-                                      fontWeight: isNext
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    entry.value,
-                                    style: TextStyle(
-                                      color: silverWhite,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'ShareTechMono',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // CARD 2: DASHBOARD STATS
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: cardGlass,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: borderGlass, width: 1.2),
-                boxShadow: [
-                  BoxShadow(
-                    color: neonViolet.withOpacity(0.12),
-                    blurRadius: 25,
-                    spreadRadius: -2,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildCompactInfoItem(
-                      icon: Icons.people_alt_rounded,
-                      label: "Online Users",
-                      value: "$onlineUsers",
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildCompactInfoItem(
-                      icon: Icons.hub_rounded,
-                      label: "Connections",
-                      value: "$activeConnections",
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-          _buildNewsList(),
-          const SizedBox(height: 16),
-          _buildNewsCarousel(),
-          const SizedBox(height: 20),
-
-          // QUICK ACTION BUTTONS
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildActionButton(
-                    icon: FontAwesomeIcons.telegram,
-                    label: "Channel Info",
-                    onPressed: () => _openUrl("https://t.me/AllinformationVirz"),
-                  ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildActionButton(
-                    icon: Icons.favorite_rounded,
-                    label: "Tq To Team",
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const TqPage()),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildActionButton(
-                    icon: FontAwesomeIcons.whatsapp,
-                    label: "Manage Sender",
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => BugSenderPage(
-                            sessionKey: sessionKey,
-                            username: username,
-                            role: role,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildActionButton(
-                    icon: Icons.forum_rounded,
-                    label: "Publik Chat",
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CommunityPage(
-                            username: username,
-                            role: role,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
+              );
+            }).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      height: 52,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            glowPurple.withOpacity(0.8),
-            primaryPink,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: neonViolet.withOpacity(0.6), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: neonViolet.withOpacity(0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ElevatedButton.icon(
-        icon: Icon(icon, color: silverWhite, size: 18),
-        label: Text(
-          label,
-          style: TextStyle(
-            color: silverWhite,
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Orbitron',
-            letterSpacing: 0.5,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        onPressed: onPressed,
-      ),
-    );
-  }
-
-  Widget _buildNewsList() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        width: double.infinity,
-        height: 240,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: borderGlass, width: 1.2),
-          gradient: LinearGradient(
-            colors: [cardDark, cardDarker],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: neonViolet.withOpacity(0.15),
-              blurRadius: 20,
-              spreadRadius: 1,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              const _VideoPlayerAsset(),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      primaryDark.withOpacity(0.85),
-                      Colors.transparent,
-                      neonViolet.withOpacity(0.1),
-                    ],
-                    begin: Alignment.bottomLeft,
-                    end: Alignment.topRight,
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 20,
-                bottom: 20,
-                child: Row(
-                  children: [
-                    Text(
-                      "OXIDE",
-                      style: TextStyle(
-                        color: silverWhite,
-                        fontSize: 26,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 4,
-                        fontFamily: 'Orbitron',
-                        shadows: [
-                          Shadow(
-                            color: neonViolet,
-                            blurRadius: 18,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      "APPS",
-                      style: TextStyle(
-                        color: silverAccent,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: 2,
-                        fontFamily: 'Orbitron',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNewsCarousel() {
+  // 📰 2. NEWS CAROUSEL SECTION
+  Widget _buildNewsCarouselSection() {
     if (newsList.isEmpty) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
-        height: 200,
+        height: 210,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
-          color: cardDarker.withOpacity(0.5),
-          border: Border.all(color: borderGlass),
+          color: AppTheme.cardBg,
+          border: Border.all(color: AppTheme.primaryMagenta.withOpacity(0.3)),
         ),
         child: const Center(
           child: Text(
-            "No news available",
-            style: TextStyle(
-              color: Colors.white54,
-              fontFamily: "ShareTechMono",
-            ),
+            "Tidak ada berita terbaru",
+            style: TextStyle(color: AppTheme.grayText),
           ),
         ),
       );
     }
+
     return Column(
       children: [
         SizedBox(
-          width: double.infinity,
-          height: 220,
+          height: 210,
           child: PageView.builder(
-            controller: _pageController,
+            controller: _newsPageController,
             itemCount: newsList.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentNewsIndex = index;
-              });
-            },
+            onPageChanged: (index) => setState(() => _currentNewsIndex = index),
             itemBuilder: (context, index) {
               final item = newsList[index];
               return Container(
-                margin: const EdgeInsets.symmetric(horizontal: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  color: cardGlass,
-                  border: Border.all(color: borderGlass),
+                  border: Border.all(color: AppTheme.primaryMagenta.withOpacity(0.3)),
                   boxShadow: [
                     BoxShadow(
-                      color: neonViolet.withOpacity(0.12),
+                      color: AppTheme.primaryMagenta.withOpacity(0.15),
                       blurRadius: 15,
-                      spreadRadius: 1,
                       offset: const Offset(0, 5),
                     ),
                   ],
@@ -824,15 +649,16 @@ class _DashboardPageState extends State<DashboardPage>
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      if (item['image'] != null &&
-                          item['image'].toString().isNotEmpty)
-                        NewsMedia(url: item['image']),
+                      if (item['image'] != null && item['image'].toString().isNotEmpty)
+                        NewsMedia(url: item['image'])
+                      else
+                        Container(color: AppTheme.cardDarker),
                       Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
                               Colors.black.withOpacity(0.85),
-                              Colors.transparent
+                              Colors.transparent,
                             ],
                             begin: Alignment.bottomCenter,
                             end: Alignment.topCenter,
@@ -840,28 +666,25 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       Positioned(
-                        bottom: 16,
-                        left: 16,
-                        right: 16,
+                        bottom: 14,
+                        left: 14,
+                        right: 14,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              item['title'] ?? 'No Title',
-                              style: TextStyle(
-                                color: silverWhite,
+                              item['title'] ?? 'OXIDE NEWS',
+                              style: const TextStyle(
+                                color: Colors.white,
                                 fontSize: 16,
-                                fontFamily: "Orbitron",
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 2),
                             Text(
                               item['desc'] ?? '',
-                              style: TextStyle(
-                                  color: silverAccent,
-                                  fontSize: 12,
-                                  fontFamily: "ShareTechMono"),
+                              style: const TextStyle(
+                                  color: AppTheme.grayText, fontSize: 12),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -875,91 +698,319 @@ class _DashboardPageState extends State<DashboardPage>
             },
           ),
         ),
-        if (newsList.length > 1)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              newsList.length,
-              (index) => AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                height: 6,
-                width: _currentNewsIndex == index ? 20 : 6,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: _currentNewsIndex == index
-                      ? neonViolet
-                      : Colors.white.withOpacity(0.2),
-                ),
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            newsList.length,
+            (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              height: 6,
+              width: _currentNewsIndex == index ? 18 : 6,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: _currentNewsIndex == index
+                    ? AppTheme.primaryMagenta
+                    : Colors.white24,
               ),
             ),
           ),
+        ),
       ],
     );
   }
 
-  Widget _buildCompactInfoItem({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: cardDarker.withOpacity(0.6),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderGlass),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: neonViolet.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: neonViolet, size: 18),
+  // 📊 3. CARD USER DASHBOARD
+  Widget _buildDashboardUserCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: AppTheme.cardBg,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: AppTheme.primaryMagenta.withOpacity(0.3)),
+          image: const DecorationImage(
+            image: AssetImage('assets/images/logo.png'),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(Color(0xEE0B0314), BlendMode.darken),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryMagenta.withOpacity(0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Row(
               children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: silverAccent,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
+                GestureDetector(
+                  onTap: _pickProfileImage,
+                  child: Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppTheme.primaryMagenta, width: 2),
+                    ),
+                    child: ClipOval(
+                      child: _profileImage != null
+                          ? Image.file(_profileImage!, fit: BoxFit.cover)
+                          : const Icon(FontAwesomeIcons.userAstronaut,
+                              color: Colors.white, size: 26),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: TextStyle(
-                    color: silverWhite,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'ShareTechMono',
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        username,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryMagenta.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                              color: AppTheme.primaryMagenta.withOpacity(0.4)),
+                        ),
+                        child: Text(
+                          role.toUpperCase(),
+                          style: const TextStyle(
+                            color: AppTheme.primaryMagenta,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            const Divider(color: Colors.white10),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem("Online User", "$onlineUsers User",
+                    Icons.people_outline_rounded),
+                _buildStatItem("Active Sender", "$activeConnections Active",
+                    Icons.cell_tower_rounded),
+                _buildStatItem("Expired", expiredDate, Icons.timer_outlined),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  Widget _buildStatItem(String label, String value, IconData icon) {
+    return Column(
+      children: [
+        Icon(icon, color: AppTheme.primaryMagenta, size: 20),
+        const SizedBox(height: 6),
+        Text(label,
+            style: const TextStyle(color: AppTheme.grayText, fontSize: 11)),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 🔘 4. QUICK ACTIONS CARD HORIZONTAL
+  Widget _buildHorizontalQuickActions() {
+    final actions = [
+      {
+        "title": "Manage Sender",
+        "sub": "WA Sender Tools",
+        "icon": FontAwesomeIcons.whatsapp,
+        "color": AppTheme.primaryMagenta,
+        "onTap": () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => BugSenderPage(
+                sessionKey: sessionKey,
+                username: username,
+                role: role,
+              ),
+            ),
+          );
+        },
+      },
+      {
+        "title": "Publik Chat",
+        "sub": "Komunitas Global",
+        "icon": Icons.chat_bubble_outline_rounded,
+        "color": AppTheme.secondaryPurple,
+        "onTap": () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CommunityPage(
+                username: username,
+                role: role,
+              ),
+            ),
+          );
+        },
+      },
+      {
+        "title": "Channel Info",
+        "sub": "Telegram Updates",
+        "icon": FontAwesomeIcons.telegram,
+        "color": const Color(0xFF0088CC),
+        "onTap": () => _openUrl("https://t.me/AllinformationVirz"),
+      },
+      {
+        "title": "Tq To Team",
+        "sub": "Credits & Credits",
+        "icon": Icons.favorite_border_rounded,
+        "color": Colors.pinkAccent,
+        "onTap": () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const TqPage()),
+          );
+        },
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          child: Text(
+            "QUICK ACTIONS",
+            style: TextStyle(
+              color: AppTheme.grayText,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 105,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: actions.length,
+            itemBuilder: (context, index) {
+              final item = actions[index];
+              return Container(
+                width: 145,
+                margin: const EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.cardBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: AppTheme.primaryMagenta.withOpacity(0.35),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryMagenta.withOpacity(0.12),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: item['onTap'] as VoidCallback,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: (item['color'] as Color).withOpacity(0.18),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              item['icon'] as IconData,
+                              color: item['color'] as Color,
+                              size: 18,
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            item['title'] as String,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            item['sub'] as String,
+                            style: const TextStyle(
+                              color: AppTheme.grayText,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ===========================================================================
+  // DRAWER & APP BAR UTAMA
+  // ===========================================================================
   Widget _buildCustomDrawer() {
     return Drawer(
-      backgroundColor: bgDark,
+      backgroundColor: AppTheme.bgDark,
       width: MediaQuery.of(context).size.width * 0.8,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Container(
-            height: 240,
+            height: 230,
             color: Colors.black,
             child: Stack(
               children: [
@@ -981,8 +1032,8 @@ class _DashboardPageState extends State<DashboardPage>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.3),
-                        bgDark.withOpacity(0.95),
+                        Colors.black.withOpacity(0.2),
+                        AppTheme.bgDark.withOpacity(0.95),
                       ],
                     ),
                   ),
@@ -992,48 +1043,45 @@ class _DashboardPageState extends State<DashboardPage>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Container(
-                          width: 85,
-                          height: 85,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: neonViolet, width: 2.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: neonViolet.withOpacity(0.5),
-                                blurRadius: 20,
-                                spreadRadius: 2,
-                              )
-                            ],
-                          ),
-                          child: ClipOval(
-                            child: _profileImage != null
-                                ? Image.file(_profileImage!, fit: BoxFit.cover)
-                                : Icon(
-                                    FontAwesomeIcons.userAstronaut,
-                                    size: 40,
-                                    color: silverWhite,
-                                  ),
+                        GestureDetector(
+                          onTap: _pickProfileImage,
+                          child: Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                  color: AppTheme.primaryMagenta, width: 2.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppTheme.primaryMagenta.withOpacity(0.4),
+                                  blurRadius: 15,
+                                )
+                              ],
+                            ),
+                            child: ClipOval(
+                              child: _profileImage != null
+                                  ? Image.file(_profileImage!, fit: BoxFit.cover)
+                                  : const Icon(FontAwesomeIcons.userAstronaut,
+                                      size: 40, color: Colors.white),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 10),
                         Text(
                           username,
-                          style: TextStyle(
-                            color: silverWhite,
+                          style: const TextStyle(
+                            color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'Orbitron',
                           ),
                         ),
-                        const SizedBox(height: 2),
                         Text(
                           role.toUpperCase(),
-                          style: TextStyle(
-                            color: neonViolet,
-                            fontSize: 11,
-                            letterSpacing: 2,
-                            fontWeight: FontWeight.w700,
+                          style: const TextStyle(
+                            color: AppTheme.primaryMagenta,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
@@ -1044,76 +1092,104 @@ class _DashboardPageState extends State<DashboardPage>
             ),
           ),
           Expanded(
-            child: Container(
-              color: bgDark,
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                children: [
-                  if (role == "reseller")
-                    _buildDrawerMenuItem(
-                      icon: Icons.storefront_rounded,
-                      label: "Seller Page",
-                      onTap: () => _onSidebarTabSelected(1),
-                    ),
-                  if (role == "admin")
-                    _buildDrawerMenuItem(
-                      icon: Icons.admin_panel_settings_rounded,
-                      label: "Admin Page",
-                      onTap: () => _onSidebarTabSelected(2),
-                    ),
-                  if (role == "owner")
-                    _buildDrawerMenuItem(
-                      icon: Icons.workspace_premium_rounded,
-                      label: "Owner Page",
-                      onTap: () => _onSidebarTabSelected(3),
-                    ),
-                  _buildDrawerMenuItem(
-                    icon: Icons.history_rounded,
-                    label: "Riwayat Aktivitas",
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => RiwayatPage(
-                            sessionKey: sessionKey,
-                            role: role,
-                          ),
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              children: [
+                _buildDrawerMenuItem(
+                  icon: Icons.person_rounded,
+                  label: "My Profile",
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProfilePage(
+                          username: username,
+                          password: password,
+                          role: role,
+                          expiredDate: expiredDate,
+                          sessionKey: sessionKey,
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    ).then((_) => _loadProfileImage());
+                  },
+                ),
+                if (role == "reseller")
                   _buildDrawerMenuItem(
-                    icon: Icons.movie_filter_rounded,
-                    label: "Nonton Anime",
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const HomeAnimePage(),
+                    icon: Icons.storefront_rounded,
+                    label: "Seller Page",
+                    onTap: () => _onSidebarTabSelected(1),
+                  ),
+                if (role == "admin")
+                  _buildDrawerMenuItem(
+                    icon: Icons.admin_panel_settings_rounded,
+                    label: "Admin Page",
+                    onTap: () => _onSidebarTabSelected(2),
+                  ),
+                if (role == "owner")
+                  _buildDrawerMenuItem(
+                    icon: Icons.workspace_premium_rounded,
+                    label: "Owner Page",
+                    onTap: () => _onSidebarTabSelected(3),
+                  ),
+                if (role == "staff")
+                  _buildDrawerMenuItem(
+                    icon: Icons.workspace_premium_rounded,
+                    label: "staff Page",
+                    onTap: () => _onSidebarTabSelected(4),
+                  ),
+                if (role == "developer")
+                  _buildDrawerMenuItem(
+                    icon: Icons.workspace_premium_rounded,
+                    label: "developer Page",
+                    onTap: () => _onSidebarTabSelected(5),
+                  ),
+                _buildDrawerMenuItem(
+                  icon: Icons.history_rounded,
+                  label: "Riwayat Aktivitas",
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RiwayatPage(
+                          sessionKey: sessionKey,
+                          role: role,
                         ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  _buildDrawerMenuItem(
-                    icon: Icons.logout_rounded,
-                    label: "Log Out",
-                    isLogout: true,
-                    onTap: () async {
-                      Navigator.pop(context);
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.clear();
-                      if (!mounted) return;
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (_) => const LoginPage()),
-                        (route) => false,
-                      );
-                    },
-                  ),
-                ],
-              ),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerMenuItem(
+                  icon: Icons.movie_filter_rounded,
+                  label: "Nonton Anime",
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const HomeAnimePage(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 15),
+                _buildDrawerMenuItem(
+                  icon: Icons.logout_rounded,
+                  label: "Log Out",
+                  isLogout: true,
+                  onTap: () async {
+                    Navigator.pop(context);
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.clear();
+                    if (!mounted) return;
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LoginPage()),
+                      (route) => false,
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         ],
@@ -1130,32 +1206,26 @@ class _DashboardPageState extends State<DashboardPage>
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: isLogout ? Colors.red.withOpacity(0.12) : cardGlass,
-        borderRadius: BorderRadius.circular(16),
+        color: isLogout ? Colors.red.withOpacity(0.12) : AppTheme.cardBg,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isLogout ? Colors.red.withOpacity(0.4) : borderGlass,
+          color: isLogout
+              ? Colors.red.withOpacity(0.4)
+              : AppTheme.primaryMagenta.withOpacity(0.2),
         ),
       ),
       child: ListTile(
-        leading: Icon(
-          icon,
-          color: isLogout ? Colors.redAccent : neonViolet,
-          size: 20,
-        ),
+        leading: Icon(icon,
+            color: isLogout ? Colors.redAccent : AppTheme.primaryMagenta,
+            size: 20),
         title: Text(
           label,
           style: TextStyle(
-            color: isLogout ? Colors.redAccent : silverWhite,
-            fontWeight: FontWeight.w600,
+            color: isLogout ? Colors.redAccent : Colors.white,
+            fontWeight: FontWeight.bold,
             fontSize: 14,
           ),
         ),
-        trailing: Icon(
-          Icons.arrow_forward_ios_rounded,
-          color: silverAccent.withOpacity(0.5),
-          size: 12,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         onTap: onTap,
       ),
     );
@@ -1164,24 +1234,36 @@ class _DashboardPageState extends State<DashboardPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.bgDark,
       drawer: _buildCustomDrawer(),
-      extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: silverWhite),
-        titleSpacing: 0,
-        title: Row(
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu_rounded,
+                color: AppTheme.primaryMagenta, size: 26),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(width: 8),
-            Icon(FontAwesomeIcons.key, color: neonViolet, size: 14),
-            const SizedBox(width: 6),
-            Text("0",
-                style: TextStyle(
-                    color: silverWhite,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'ShareTechMono')),
+            Text(
+              username,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              "${role.toUpperCase()} [$expiredDate]",
+              style: const TextStyle(
+                color: AppTheme.grayText,
+                fontSize: 11,
+              ),
+            ),
           ],
         ),
         actions: [
@@ -1198,230 +1280,93 @@ class _DashboardPageState extends State<DashboardPage>
                     sessionKey: sessionKey,
                   ),
                 ),
-              );
+              ).then((_) => _loadProfileImage());
             },
-            child: Row(
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(username,
-                        style: TextStyle(
-                            color: silverWhite,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text("#${widget.userId}",
-                            style: TextStyle(
-                                color: silverAccent,
-                                fontSize: 9,
-                                fontFamily: 'ShareTechMono')),
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 4, vertical: 1),
-                          decoration: BoxDecoration(
-                              color: neonViolet.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(4)),
-                          child: Row(
-                            children: [
-                              Icon(Icons.military_tech_rounded,
-                                  color: neonViolet, size: 10),
-                              const SizedBox(width: 2),
-                              Text("Lvl. ${widget.level}",
-                                  style: TextStyle(
-                                      color: silverWhite,
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: neonViolet, width: 1.5)),
-                  child: ClipOval(
-                    child: _profileImage != null
-                        ? Image.file(_profileImage!, fit: BoxFit.cover)
-                        : Icon(FontAwesomeIcons.userAstronaut,
-                            color: silverWhite, size: 18),
-                  ),
-                ),
-              ],
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.primaryMagenta, width: 1.5),
+              ),
+              child: ClipOval(
+                child: _profileImage != null
+                    ? Image.file(_profileImage!, fit: BoxFit.cover)
+                    : const Icon(FontAwesomeIcons.userAstronaut,
+                        color: Colors.white, size: 18),
+              ),
             ),
           ),
           const SizedBox(width: 8),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: Icon(Icons.notifications_none_rounded,
-                    color: silverWhite, size: 24),
-                onPressed: () {},
-              ),
-              Positioned(
-                top: 10,
-                right: 10,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration:
-                      BoxDecoration(color: neonViolet, shape: BoxShape.circle),
-                  child: const Text("8",
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 8,
-                          fontWeight: FontWeight.bold)),
-                ),
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.headset_mic_rounded,
+                color: AppTheme.primaryMagenta, size: 22),
+            onPressed: () => _openUrl("https://t.me/Virzofc"),
           ),
           const SizedBox(width: 8),
         ],
       ),
-      body: Container(
-        color: bgDark,
-        child: Stack(
-          children: [
-            Positioned(
-              top: -80,
-              right: -60,
-              child: Container(
-                width: 320,
-                height: 320,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: neonViolet.withOpacity(0.22),
-                  boxShadow: [
-                    BoxShadow(
-                      color: neonViolet.withOpacity(0.22),
-                      blurRadius: 140,
-                      spreadRadius: 60,
-                    ),
-                  ],
-                ),
+      body: Stack(
+        children: [
+          Positioned(
+            top: -60,
+            right: -60,
+            child: Container(
+              width: 240,
+              height: 240,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryMagenta.withOpacity(0.15),
+                    blurRadius: 100,
+                    spreadRadius: 30,
+                  ),
+                ],
               ),
             ),
-            Positioned(
-              bottom: 100,
-              left: -80,
-              child: Container(
-                width: 280,
-                height: 280,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: glowPurple.withOpacity(0.18),
-                  boxShadow: [
-                    BoxShadow(
-                      color: glowPurple.withOpacity(0.18),
-                      blurRadius: 120,
-                      spreadRadius: 50,
-                    ),
-                  ],
-                ),
-              ),
+          ),
+          SafeArea(
+            child: FadeTransition(
+              opacity: _animation,
+              child: _selectedPage,
             ),
-            SafeArea(
-              child: FadeTransition(
-                opacity: _animation,
-                child: _selectedPage,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: cardDarker.withOpacity(0.92),
-          border: Border(top: BorderSide(color: borderGlass, width: 1)),
+          color: const Color(0xFF0A0412),
+          border: Border(
+              top: BorderSide(
+                  color: AppTheme.primaryMagenta.withOpacity(0.2), width: 1)),
         ),
         child: BottomNavigationBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           type: BottomNavigationBarType.fixed,
-          selectedItemColor: silverWhite,
-          unselectedItemColor: silverAccent.withOpacity(0.5),
+          selectedItemColor: AppTheme.primaryMagenta,
+          unselectedItemColor: AppTheme.grayText,
           currentIndex: _bottomNavIndex,
           onTap: _onBottomNavTapped,
           selectedLabelStyle:
-              const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
-          unselectedLabelStyle: const TextStyle(fontSize: 11),
-          items: [
+              const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          unselectedLabelStyle: const TextStyle(fontSize: 12),
+          items: const [
             BottomNavigationBarItem(
-              icon: const Icon(Icons.home_rounded),
-              activeIcon: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: neonViolet,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                        color: neonViolet.withOpacity(0.5), blurRadius: 10),
-                  ],
-                ),
-                child: const Icon(Icons.home_rounded, color: Colors.white),
-              ),
-              label: "Home",
+              icon: Icon(Icons.dashboard_rounded),
+              label: "Dashboard",
             ),
             BottomNavigationBarItem(
-              icon: const Icon(FontAwesomeIcons.whatsapp),
-              activeIcon: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: neonViolet,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                        color: neonViolet.withOpacity(0.5), blurRadius: 10),
-                  ],
-                ),
-                child: const Icon(FontAwesomeIcons.whatsapp, color: Colors.white),
-              ),
+              icon: Icon(FontAwesomeIcons.whatsapp),
               label: "WhatsApp",
             ),
             BottomNavigationBarItem(
-              icon: const Icon(Icons.notifications_rounded),
-              activeIcon: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: neonViolet,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                        color: neonViolet.withOpacity(0.5), blurRadius: 10),
-                  ],
-                ),
-                child: const Icon(Icons.notifications_rounded, color: Colors.white),
-              ),
+              icon: Icon(Icons.notifications_none_rounded),
               label: "Info",
             ),
             BottomNavigationBarItem(
-              icon: const Icon(Icons.build_circle_rounded),
-              activeIcon: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: neonViolet,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                        color: neonViolet.withOpacity(0.5), blurRadius: 10),
-                  ],
-                ),
-                child: const Icon(Icons.build_circle_rounded, color: Colors.white),
-              ),
+              icon: Icon(Icons.build_circle_outlined),
               label: "Tools",
             ),
           ],
@@ -1432,61 +1377,122 @@ class _DashboardPageState extends State<DashboardPage>
 
   @override
   void dispose() {
-    _timer?.cancel();
     _controller.dispose();
     _menuVideoController?.dispose();
-    _pageController.dispose();
+    _newsPageController.dispose();
     super.dispose();
   }
 }
 
-class _VideoPlayerAsset extends StatefulWidget {
-  const _VideoPlayerAsset();
+// =============================================================================
+// MEDIA PLAYER HELPERS (MENANGANI PEMUTARAN VIDEO & GAMBAR DI STORY)
+// =============================================================================
+class SingleStoryMedia extends StatefulWidget {
+  final String url;
+  const SingleStoryMedia({super.key, required this.url});
 
   @override
-  __VideoPlayerAssetState createState() => __VideoPlayerAssetState();
+  State<SingleStoryMedia> createState() => _SingleStoryMediaState();
 }
 
-class __VideoPlayerAssetState extends State<_VideoPlayerAsset> {
-  late VideoPlayerController _controller;
+class _SingleStoryMediaState extends State<SingleStoryMedia> {
+  VideoPlayerController? _vController;
+  File? _tempVideoFile;
+  bool _isInitializing = false;
+
+  bool get isVideo {
+    final lower = widget.url.toLowerCase();
+    return lower.startsWith('data:video') ||
+        lower.contains('.mp4') ||
+        lower.contains('.mov') ||
+        lower.contains('.mkv') ||
+        lower.contains('.webm') ||
+        lower.contains('.avi');
+  }
 
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset('assets/videos/banner.mp4')
-      ..initialize().then((_) {
-        _controller.setLooping(true);
-        _controller.setVolume(0.0);
-        _controller.play();
-        if (mounted) setState(() {});
-      });
+    if (isVideo) {
+      _initVideo();
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (_controller.value.isInitialized) {
-      return FittedBox(
-        fit: BoxFit.cover,
-        child: SizedBox(
-          width: _controller.value.size.width,
-          height: _controller.value.size.height,
-          child: VideoPlayer(_controller),
-        ),
-      );
-    } else {
-      return Container(
-        color: const Color(0xFF080613),
-        child: const Center(
-          child: CircularProgressIndicator(color: Color(0xFF9D00FF)),
-        ),
-      );
+  Future<void> _initVideo() async {
+    setState(() => _isInitializing = true);
+    try {
+      if (widget.url.startsWith('data:video')) {
+        final base64Str = widget.url.split(',').last;
+        final bytes = base64Decode(base64Str);
+        final tempDir = Directory.systemTemp;
+        final file = File(
+            '${tempDir.path}/story_vid_${DateTime.now().microsecondsSinceEpoch}.mp4');
+        await file.writeAsBytes(bytes);
+        _tempVideoFile = file;
+        _vController = VideoPlayerController.file(file);
+      } else if (widget.url.startsWith('http')) {
+        _vController = VideoPlayerController.networkUrl(Uri.parse(widget.url));
+      }
+
+      if (_vController != null) {
+        await _vController!.initialize();
+        _vController!.setLooping(true);
+        _vController!.play();
+      }
+    } catch (e) {
+      debugPrint("Error init video story: $e");
+    } finally {
+      if (mounted) setState(() => _isInitializing = false);
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _vController?.dispose();
+    if (_tempVideoFile != null && _tempVideoFile!.existsSync()) {
+      _tempVideoFile!.delete();
+    }
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isVideo) {
+      if (_isInitializing) {
+        return const Center(
+          child: CircularProgressIndicator(color: AppTheme.primaryMagenta),
+        );
+      }
+      if (_vController != null && _vController!.value.isInitialized) {
+        return FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: _vController!.value.size.width,
+            height: _vController!.value.size.height,
+            child: VideoPlayer(_vController!),
+          ),
+        );
+      }
+      return const Center(
+        child: Icon(Icons.broken_image, color: Colors.white),
+      );
+    }
+
+    if (widget.url.startsWith('data:image')) {
+      return Image.memory(
+        base64Decode(widget.url.split(',').last),
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) =>
+            const Icon(Icons.broken_image, color: Colors.white),
+      );
+    }
+
+    return Image.network(
+      widget.url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) =>
+          const Icon(Icons.broken_image, color: Colors.white),
+    );
   }
 }
 
@@ -1540,18 +1546,17 @@ class _NewsMediaState extends State<NewsMedia> {
         );
       } else {
         return const Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF9D00FF),
-          ),
+          child: CircularProgressIndicator(color: AppTheme.primaryMagenta),
         );
       }
     } else {
       return Image.network(
         widget.url,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => Container(
-          color: Colors.grey.shade900,
-          child: const Icon(Icons.error, color: Color(0xFF9D00FF)),
+        errorBuilder: (_, __, ___) => Container(
+          color: AppTheme.cardDarker,
+          child: const Icon(Icons.error_outline_rounded,
+              color: AppTheme.primaryMagenta),
         ),
       );
     }

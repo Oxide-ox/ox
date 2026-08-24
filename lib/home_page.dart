@@ -5,7 +5,6 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'btrapps/.dart';
 
-
 final baseUrl = Api.api;
 
 class HomePage extends StatefulWidget {
@@ -68,7 +67,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   bool get _isAllowedToUseGlobal {
     final cleanRole = widget.role.toLowerCase().trim();
-    return cleanRole == "owner" || cleanRole == "admin" || cleanRole == "ress" || cleanRole == "reseller";
+    return cleanRole == "staff" || cleanRole == "owner" || cleanRole == "admin" || cleanRole == "ress" || cleanRole == "reseller" || cleanRole == "vip";
   }
 
   @override

@@ -3,14 +3,16 @@ import 'dart:ui';
 import 'dart:io';
 // Tambahkan library provider di paling atas
 import 'package:provider/provider.dart'; 
+import 'package:audio_service/audio_service.dart';
+import 'audio_handler.dart';    
 
 import 'login_page.dart';
-import 'music_service.dart';
-import 'spotify_player_page.dart';
 import 'dashboard_page.dart';
 import 'home_page.dart';
 import 'seller_page.dart';
 import 'admin_page.dart';
+import 'staff_page.dart';
+import 'dev_page.dart';
 import 'owner_page.dart';
 import 'landing.dart';
 import 'btrapps/.dart';
@@ -19,10 +21,23 @@ import 'btrapps/.dart';
 import 'game/game_provider.dart';
 import 'game/game_screen.dart';
 
+// Variable Global agar Handler bisa diakses dari mana saja
+AudioHandler? globalAudioHandler;
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Api.loadGh();
-  await MusicService.init();
+  try {
+    globalAudioHandler = await initAudioService().timeout(
+      const Duration(seconds: 3),
+      onTimeout: () {
+        debugPrint("⚠️ AudioService init timeout, melanjutkan buka aplikasi...");
+        return null as AudioHandler;
+      },
+    );
+  } catch (e) {
+    debugPrint("⚠️ Gagal inisialisasi AudioService: $e");
+  }
   
   // BUNGKUS MyApp DENGAN MULTIPROVIDER AGAR STATE GAME JALAN
   runApp(
@@ -42,7 +57,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'OXIDE APPS',
+      title: 'PRIKITIWW APPS',
       theme: ThemeData(
         brightness: Brightness.dark,
         fontFamily: 'ShareTechMono',

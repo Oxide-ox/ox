@@ -1,17 +1,25 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Permissions -->
+    <!-- Permissions Umum & Kamera -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    
+    <!-- Permissions Storage (Android 12 ke bawah & Android 13+) -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
     
-    <!-- Permissions untuk Background Audio & Notifikasi Media -->
+    <!-- Permissions Audio & Rekaman -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    
+    <!-- Permissions Background Audio & Notifikasi Service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 
     <application
         android:label="OXIDE APPS"
@@ -39,7 +47,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Service untuk Background Audio Playback
+        <!-- Service untuk Background Audio Playback (audio_service) -->
         <service 
             android:name="com.ryanheise.audioservice.AudioService"
             android:foregroundServiceType="mediaPlayback"
@@ -49,14 +57,14 @@
             </intent-filter>
         </service>
 
-        <!--Receiver untuk Tombol Media (Headset / Notification Control) -->
-      <!--  <receiver 
+        <!-- Receiver untuk Tombol Media (Headset / Notification Control) -->
+        <receiver 
             android:name="com.ryanheise.audioservice.MediaButtonReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
-        </receiver>  -->
+        </receiver>
 
         <!-- Meta-data Flutter Plugin Registrant -->
         <meta-data

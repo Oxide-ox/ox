@@ -18,6 +18,8 @@ import 'prikitiww_music_page.dart';
 import 'anime_home.dart';
 import 'chatbot_page.dart';
 import 'youtube_page.dart';
+import 'music_player_page.dart';
+import 'movie.dart';
 
 class ToolsPage extends StatelessWidget {
   final String username;
@@ -563,7 +565,7 @@ class ToolsPage extends StatelessWidget {
             Navigator.pop(context);
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const PrikitiwwMusicPage()),
+              MaterialPageRoute(builder: (_) => const MusicPlayerScreen()),
             );
           },
         ),
@@ -665,7 +667,13 @@ class ToolsPage extends StatelessWidget {
         _buildToolOption(
           icon: Icons.live_tv,
           label: "Movies & Series",
-          onTap: () => _showComingSoon(context),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NetflixMovieApp()),
+            );
+          },
         ),
       ],
     );

@@ -148,7 +148,7 @@ class _AttackPanelState extends State<AttackPanel> with TickerProviderStateMixin
               Divider(color: accentPurple, thickness: 0.6), // Divider diubah ke ungu
               const SizedBox(height: 25),
 
-              // === Target Input Card ===
+              //  Target Input Card 
               _buildInputCard(
                 icon: Icons.computer,
                 title: "Target IP",
@@ -161,7 +161,7 @@ class _AttackPanelState extends State<AttackPanel> with TickerProviderStateMixin
               ),
               const SizedBox(height: 20),
 
-              // === Port Input Card ===
+              //  Port Input Card
               _buildInputCard(
                 icon: Icons.wifi_tethering,
                 title: "Port",
@@ -179,7 +179,7 @@ class _AttackPanelState extends State<AttackPanel> with TickerProviderStateMixin
               ),
               const SizedBox(height: 20),
 
-              // === Duration Slider ===
+              //  Duration Slider 
               _buildInputCard(
                 icon: Icons.timer,
                 title: "Attack Duration",

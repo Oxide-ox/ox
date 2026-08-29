@@ -12,7 +12,7 @@ dependencies:
   
   # --- Audio & Media ---
   just_audio: ^0.9.39
-  audio_service: ^0.18.15 # 👈 WAJIB ADA agar music_service.dart tidak error
+  audio_service: ^0.18.15
   audioplayers: ^6.6.0
   youtube_player_flutter: ^9.1.1
   youtube_player_iframe: ^5.2.1
@@ -29,6 +29,7 @@ dependencies:
   # --- UI & Utilities ---
   cupertino_icons: ^1.0.8
   font_awesome_flutter: ^10.10.0
+  flutter_svg: ^2.0.10+1 # 👈 DITAMBAHKAN (untuk render ikon SVG)
   cached_network_image: ^3.4.1
   fl_chart: ^0.68.0
   carousel_slider: ^5.0.0
@@ -66,14 +67,11 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
 
+  # Cukup daftarkan foldernya saja
   assets:
     - assets/videos/
     - assets/images/
-    - assets/images/logo.png
-    - assets/images/logoo.png
-    - assets/images/login.png
-    - assets/videos/splash.mp4
-    - assets/videos/banner.mp4
+    - assets/icon/
 
   fonts:
     - family: Orbitron

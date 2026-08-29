@@ -4,7 +4,7 @@ import 'dart:io';
 // Tambahkan library provider di paling atas
 import 'package:provider/provider.dart'; 
 import 'package:audio_service/audio_service.dart';
-import 'audio_handler.dart';    
+import 'audio_service_handler.dart';    
 
 import 'login_page.dart';
 import 'dashboard_page.dart';
@@ -24,21 +24,17 @@ import 'game/game_screen.dart';
 // Variable Global agar Handler bisa diakses dari mana saja
 AudioHandler? globalAudioHandler;
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await Api.loadGh();
-  try {
-    globalAudioHandler = await initAudioService().timeout(
-      const Duration(seconds: 3),
-      onTimeout: () {
-        debugPrint("⚠️ AudioService init timeout, melanjutkan buka aplikasi...");
-        return null as AudioHandler;
-      },
-    );
-  } catch (e) {
-    debugPrint("⚠️ Gagal inisialisasi AudioService: $e");
-  }
-  
+
+  // Load API di latar belakang tanpa menahan startup
+  Api.loadGh().catchError((e) {
+    debugPrint("⚠️ Gagal load API config: $e");
+  });
+
+  // Inisialisasi AudioService di background (Non-blocking / Anti Freeze)
+  _initAudioInBackground();
+
   // BUNGKUS MyApp DENGAN MULTIPROVIDER AGAR STATE GAME JALAN
   runApp(
     MultiProvider(
@@ -50,6 +46,22 @@ void main() async {
   );
 }
 
+/// Inisialisasi AudioService secara asynchronous tanpa menahan UI
+Future<void> _initAudioInBackground() async {
+  try {
+    globalAudioHandler = await initAudioService().timeout(
+      const Duration(seconds: 5),
+      onTimeout: () {
+        debugPrint("⚠️ AudioService init timeout, melanjutkan di latar belakang...");
+        return null as AudioHandler;
+      },
+    );
+    debugPrint("✅ AudioService berhasil aktif di background!");
+  } catch (e) {
+    debugPrint("⚠️ Gagal inisialisasi AudioService: $e");
+  }
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -57,7 +69,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'PRIKITIWW APPS',
+      title: 'OXIDE OX',
       theme: ThemeData(
         brightness: Brightness.dark,
         fontFamily: 'ShareTechMono',

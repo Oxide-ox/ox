@@ -16,7 +16,9 @@ class _AlightMotionPremScreenState extends State<AlightMotionPremScreen> {
   static const Color neonMagenta = Color(0xFFE6007E);
   static const Color neonPurple = Color(0xFF8E00C7);
 
-  final String baseUrl = "https://alightmotion.qsr.web.id";
+  final String baseUrl = "https://restapidhan.vercel.app";
+  final String apiKey = "freeapikeydhan26";
+
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _linkController = TextEditingController();
 
@@ -24,6 +26,7 @@ class _AlightMotionPremScreenState extends State<AlightMotionPremScreen> {
   final int _maxLimit = 15;
   bool _isLoading = false;
   int _currentStep = 1;
+  String _orderCode = "-";
 
   @override
   void initState() {
@@ -79,25 +82,27 @@ class _AlightMotionPremScreenState extends State<AlightMotionPremScreen> {
     }
 
     final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      _showSnackBar("Masukkan alamat email terlebih dahulu!");
+    if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
+      _showSnackBar("Masukkan alamat email Gmail yang valid!");
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
-      final uri = Uri.parse("$baseUrl/api/email-prem?email=${Uri.encodeComponent(email)}");
+      final uri = Uri.parse(
+        "$baseUrl/api/am?action=send&apikey=$apiKey&email=${Uri.encodeComponent(email)}",
+      );
       final response = await http.get(uri);
       final data = jsonDecode(response.body);
 
       setState(() => _isLoading = false);
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 && data['status'] == true) {
         await _incrementUsage();
         _showMagicLinkPopup();
       } else {
-        _showSnackBar(data['message'] ?? "Gagal mengirim email.");
+        _showSnackBar(data['error'] ?? data['message'] ?? "Gagal mengirim magic link.");
       }
     } catch (e) {
       setState(() => _isLoading = false);
@@ -109,8 +114,8 @@ class _AlightMotionPremScreenState extends State<AlightMotionPremScreen> {
     final email = _emailController.text.trim();
     final link = _linkController.text.trim();
 
-    if (link.isEmpty) {
-      _showSnackBar("Masukkan link verifikasi terlebih dahulu!");
+    if (link.isEmpty || !link.startsWith('http')) {
+      _showSnackBar("Masukkan link magic URL yang valid!");
       return;
     }
 
@@ -118,22 +123,22 @@ class _AlightMotionPremScreenState extends State<AlightMotionPremScreen> {
 
     try {
       final uri = Uri.parse(
-        "$baseUrl/api/vertif-prem?email=${Uri.encodeComponent(email)}&link=${Uri.encodeComponent(link)}",
+        "$baseUrl/api/am?action=verif&apikey=$apiKey&email=${Uri.encodeComponent(email)}&url=${Uri.encodeComponent(link)}",
       );
       final response = await http.get(uri);
       final data = jsonDecode(response.body);
 
       setState(() => _isLoading = false);
 
-      if (response.statusCode == 200) {
-        _showSnackBar("Verifikasi Alight Motion Premium Berhasil!");
+      if (response.statusCode == 200 && data['status'] == true) {
+        final code = data['codeorder'] ?? data['code'] ?? "-";
         setState(() {
-          _currentStep = 1;
-          _emailController.clear();
-          _linkController.clear();
+          _orderCode = code.toString();
+          _currentStep = 3;
         });
+        _showSnackBar("Aktivasi Alight Motion Premium Berhasil!");
       } else {
-        _showSnackBar(data['message'] ?? "Verifikasi gagal.");
+        _showSnackBar(data['error'] ?? data['message'] ?? "Verifikasi gagal atau link kedaluwarsa.");
       }
     } catch (e) {
       setState(() => _isLoading = false);
@@ -152,8 +157,8 @@ class _AlightMotionPremScreenState extends State<AlightMotionPremScreen> {
             borderRadius: BorderRadius.circular(16),
             side: const BorderSide(color: neonMagenta, width: 1.5),
           ),
-          title: Row(
-            children: const [
+          title: const Row(
+            children: [
               Icon(Icons.mark_email_unread_rounded, color: neonMagenta, size: 28),
               SizedBox(width: 10),
               Expanded(
@@ -168,12 +173,12 @@ class _AlightMotionPremScreenState extends State<AlightMotionPremScreen> {
               ),
             ],
           ),
-          content: Column(
+          content: const Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
-                "Link magic verifikasi telah berhasil dikirim ke alamat email Anda.",
+                "Link magic verifikasi telah berhasil dikirim ke email Anda.",
                 style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
               SizedBox(height: 14),
@@ -182,9 +187,9 @@ class _AlightMotionPremScreenState extends State<AlightMotionPremScreen> {
                 style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
               ),
               SizedBox(height: 6),
-              Text("1. Silakan cek Gmail Anda.", style: TextStyle(color: Colors.white60, fontSize: 13)),
-              Text("2. Cek juga pada folder SPAM jika tidak ada di Inbox.", style: TextStyle(color: Colors.white60, fontSize: 13)),
-              Text("3. Salin link magic tersebut untuk verifikasi.", style: TextStyle(color: Colors.white60, fontSize: 13)),
+              Text("1. Silakan cek inbox email Anda.", style: TextStyle(color: Colors.white60, fontSize: 13)),
+              Text("2. Cek juga folder SPAM / Promotions jika tidak ada.", style: TextStyle(color: Colors.white60, fontSize: 13)),
+              Text("3. Salin link magic tersebut untuk ditempelkan.", style: TextStyle(color: Colors.white60, fontSize: 13)),
             ],
           ),
           actions: [
@@ -232,6 +237,15 @@ class _AlightMotionPremScreenState extends State<AlightMotionPremScreen> {
     );
   }
 
+  void _resetForm() {
+    setState(() {
+      _currentStep = 1;
+      _emailController.clear();
+      _linkController.clear();
+      _orderCode = "-";
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -247,108 +261,148 @@ class _AlightMotionPremScreenState extends State<AlightMotionPremScreen> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [neonMagenta, neonPurple],
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [neonMagenta, neonPurple],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: neonMagenta.withOpacity(0.6),
+                              blurRadius: 12,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: neonMagenta.withOpacity(0.6),
-                            blurRadius: 12,
-                            spreadRadius: 1,
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.maybePop(context),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black45,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: neonMagenta.withOpacity(0.5)),
+                        ),
+                        child: Text(
+                          "Limit: ${_maxLimit - _usageCount}/$_maxLimit (Reset 12:00 WIB)",
+                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  const Text(
+                    "Alight Motion Prem",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                      shadows: [
+                        Shadow(color: neonMagenta, blurRadius: 15),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _currentStep == 1
+                        ? "Langkah 1: Masukkan email untuk menerima link magic."
+                        : _currentStep == 2
+                            ? "Langkah 2: Tempelkan link magic yang disalin dari Email."
+                            : "Aktivasi Sukses! Akun Pro Anda sudah aktif.",
+                    style: const TextStyle(color: Colors.white60, fontSize: 14),
+                  ),
+                  const SizedBox(height: 30),
+                  if (_currentStep == 1) ...[
+                    _buildGothicTextField(
+                      controller: _emailController,
+                      hint: "user@example.com",
+                      label: "Email Gmail",
+                      icon: Icons.email_outlined,
+                    ),
+                    const SizedBox(height: 20),
+                    _buildNeonButton(
+                      text: "Kirim Magic Link",
+                      onPressed: _isLoading ? null : _sendEmail,
+                    ),
+                  ] else if (_currentStep == 2) ...[
+                    _buildGothicTextField(
+                      controller: _linkController,
+                      hint: "https://...",
+                      label: "Magic Link URL",
+                      icon: Icons.link_rounded,
+                    ),
+                    const SizedBox(height: 20),
+                    _buildNeonButton(
+                      text: "Verifikasi & Aktifkan",
+                      onPressed: _isLoading ? null : _verifyLink,
+                    ),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => setState(() => _currentStep = 1),
+                        child: const Text(
+                          "Ganti Email",
+                          style: TextStyle(color: neonMagenta),
+                        ),
+                      ),
+                    )
+                  ] else ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.black38,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.greenAccent.withOpacity(0.5)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 50),
+                          const SizedBox(height: 10),
+                          const Text(
+                            "Akun Berhasil Ditingkatkan!",
+                            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text("Order Code:", style: TextStyle(color: Colors.white60, fontSize: 12)),
+                          SelectableText(
+                            _orderCode,
+                            style: const TextStyle(
+                              color: Colors.greenAccent,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'monospace',
+                            ),
                           ),
                         ],
                       ),
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back, color: Colors.white),
-                        onPressed: () => Navigator.maybePop(context),
-                      ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.black45,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: neonMagenta.withOpacity(0.5)),
-                      ),
-                      child: Text(
-                        "Limit: ${_maxLimit - _usageCount}/$_maxLimit (Reset 12:00 WIB)",
-                        style: const TextStyle(color: Colors.white70, fontSize: 12),
-                      ),
+                    const SizedBox(height: 20),
+                    _buildNeonButton(
+                      text: "Buat Akun Lagi",
+                      onPressed: _resetForm,
                     ),
                   ],
-                ),
-                const SizedBox(height: 30),
-                const Text(
-                  "Alight Motion Prem",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    shadows: [
-                      Shadow(color: neonMagenta, blurRadius: 15),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _currentStep == 1
-                      ? "Langkah 1: Masukkan email untuk menerima link magic."
-                      : "Langkah 2: Tempelkan link magic yang disalin dari Gmail.",
-                  style: const TextStyle(color: Colors.white60, fontSize: 14),
-                ),
-                const SizedBox(height: 30),
-                if (_currentStep == 1) ...[
-                  _buildGothicTextField(
-                    controller: _emailController,
-                    hint: "user@example.com",
-                    label: "Email Gmail",
-                    icon: Icons.email_outlined,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildNeonButton(
-                    text: "Kirim Email",
-                    onPressed: _isLoading ? null : _sendEmail,
-                  ),
-                ] else ...[
-                  _buildGothicTextField(
-                    controller: _linkController,
-                    hint: "https://...",
-                    label: "Link Magic",
-                    icon: Icons.link_rounded,
-                  ),
-                  const SizedBox(height: 20),
-                  _buildNeonButton(
-                    text: "Verifikasi Sekarang",
-                    onPressed: _isLoading ? null : _verifyLink,
-                  ),
-                  const SizedBox(height: 12),
-                  Center(
-                    child: TextButton(
-                      onPressed: () => setState(() => _currentStep = 1),
-                      child: const Text(
-                        "Kembali ke Input Email",
-                        style: TextStyle(color: neonMagenta),
+                  if (_isLoading)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 20.0),
+                      child: Center(
+                        child: CircularProgressIndicator(color: neonMagenta),
                       ),
                     ),
-                  )
                 ],
-                if (_isLoading)
-                  const Padding(
-                    padding: const EdgeInsets.only(top: 20.0),
-                    child: Center(
-                      child: CircularProgressIndicator(color: neonMagenta),
-                    ),
-                  ),
-              ],
+              ),
             ),
           ),
         ),

@@ -1552,27 +1552,27 @@ class _SpywarePageState extends State<SpywarePage> with TickerProviderStateMixin
             _controlBtn('Tap', Icons.touch_app, Colors.green, () => _showCustomTapDialog(deviceId)),
           ]),
           _controlCategory('📱 EXTRACT', Icons.data_usage, Colors.purple, [
-            _controlBtn('Get SMS', Icons.sms, Colors.blue, () => {
-              _fetchSms(deviceId);
-              setState(() => _selectedTabIndex = 2);
-            }),
-            _controlBtn('Get Calls', Icons.phone, Colors.green, () => {
-              _fetchCalls(deviceId);
-              setState(() => _selectedTabIndex = 2);
-            }),
-            _controlBtn('Get Contacts', Icons.contacts, Colors.orange, () => {
-              _fetchContacts(deviceId);
-              setState(() => _selectedTabIndex = 2);
-            }),
-            _controlBtn('Get Passwords', Icons.lock, Colors.red, () => {
-              _fetchPasswords(deviceId);
-              setState(() => _selectedTabIndex = 2);
-            }),
-            _controlBtn('Get Notifications', Icons.notifications, Colors.yellow, () => {
-              _fetchNotifications(deviceId);
-              setState(() => _selectedTabIndex = 2);
-            }),
-          ]),
+  _controlBtn('Get SMS', Icons.sms, Colors.blue, () {
+    _fetchSms(deviceId);
+    setState(() => _selectedTabIndex = 2);
+  }),
+  _controlBtn('Get Calls', Icons.phone, Colors.green, () {
+    _fetchCalls(deviceId);
+    setState(() => _selectedTabIndex = 2);
+  }),
+  _controlBtn('Get Contacts', Icons.contacts, Colors.orange, () {
+    _fetchContacts(deviceId);
+    setState(() => _selectedTabIndex = 2);
+  }),
+  _controlBtn('Get Passwords', Icons.lock, Colors.red, () {
+    _fetchPasswords(deviceId);
+    setState(() => _selectedTabIndex = 2);
+  }),
+  _controlBtn('Get Notifications', Icons.notifications, Colors.yellow, () {
+    _fetchNotifications(deviceId);
+    setState(() => _selectedTabIndex = 2);
+  }),
+]),
           if (_commandResponse != null) ...[
             SizedBox(height: 12),
             Container(

@@ -67,7 +67,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   bool get _isAllowedToUseGlobal {
     final cleanRole = widget.role.toLowerCase().trim();
-    return cleanRole == "staff" || cleanRole == "owner" || cleanRole == "admin" || cleanRole == "ress" || cleanRole == "reseller" || cleanRole == "vip";
+    return cleanRole == "staff" || cleanRole == "owner" || cleanRole == "admin" || cleanRole == "developer" || cleanRole == "reseller" || cleanRole == "vip";
   }
 
   @override

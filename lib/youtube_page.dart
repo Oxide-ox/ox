@@ -257,7 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('⚡ YouTube PLAYER'),
+          title: const Text(' Vidio Player'),
           centerTitle: true,
           actions: [
             IconButton(
@@ -330,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_videos.isEmpty) {
       return const Center(
         child: Text(
-          'Ketik kata kunci lalu tekan Enter\nuntuk mencari video 🔍',
+          'Ketik kata kunci lalu tekan Enter\nuntuk mencari video',
           style: TextStyle(color: CyberTheme.greyText),
           textAlign: TextAlign.center,
         ),
@@ -384,7 +384,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          title: const Text('📜 RIWAYAT TONTONAN'),
+          title: const Text('RIWAYAT TONTONAN'),
           actions: [
             if (_history.isNotEmpty)
               IconButton(
@@ -422,7 +422,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               : _history.isEmpty
                   ? const Center(
                       child: Text(
-                        'Belum ada riwayat tontonan 🎬',
+                        'Belum ada riwayat tontonan',
                         style: TextStyle(color: CyberTheme.greyText),
                       ),
                     )

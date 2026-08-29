@@ -125,7 +125,7 @@ class _SplashScreenState extends State<SplashScreen>
             right: 0,
             child: Center(
               child: Text(
-                "OXIDD OX",
+                "OXIDE OX",
                 style: TextStyle(
                   fontSize: 42,
                   fontWeight: FontWeight.bold,

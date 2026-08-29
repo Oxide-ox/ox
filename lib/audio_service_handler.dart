@@ -14,7 +14,7 @@ Future<AudioHandler> initAudioService() async {
       androidNotificationChannelName: 'Oxide Playback',
       androidNotificationChannelDescription: 'Oxide Music Service',
       androidNotificationOngoing: true,
-      androidStopForegroundOnPause: false,
+      androidStopForegroundOnPause: true,
     //  androidNotificationClickStartsService: true,
       androidNotificationIcon: 'mipmap/ic_launcher',
       notificationColor: Color(0xFF8B5CF6),

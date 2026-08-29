@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'dart:io';
-// Tambahkan library provider di paling atas
-import 'package:provider/provider.dart'; 
+import 'package:provider/provider.dart';
 import 'package:audio_service/audio_service.dart';
-import 'audio_service_handler.dart';    
-
 import 'login_page.dart';
 import 'dashboard_page.dart';
 import 'home_page.dart';
@@ -17,55 +14,50 @@ import 'owner_page.dart';
 import 'landing.dart';
 import 'btrapps/.dart';
 
-// IMPORT FILE GAME BARU KAMU DI SINI
-import 'game/game_provider.dart';
-import 'game/game_screen.dart';
+import 'audio_service_handler.dart';
+import 'movie.dart';
 
-// Variable Global agar Handler bisa diakses dari mana saja
 AudioHandler? globalAudioHandler;
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Load API di latar belakang tanpa menahan startup
   Api.loadGh().catchError((e) {
     debugPrint("⚠️ Gagal load API config: $e");
   });
 
-  // Inisialisasi AudioService di background (Non-blocking / Anti Freeze)
-  _initAudioInBackground();
-
-  // BUNGKUS MyApp DENGAN MULTIPROVIDER AGAR STATE GAME JALAN
+  _initAudioServiceAsync();
   runApp(
     MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => GameProvider()),
-      ],
+      providers: [],
       child: const MyApp(),
     ),
   );
 }
 
-/// Inisialisasi AudioService secara asynchronous tanpa menahan UI
-Future<void> _initAudioInBackground() async {
+Future<void> _initAudioServiceAsync() async {
   try {
     globalAudioHandler = await initAudioService().timeout(
-      const Duration(seconds: 5),
+      const Duration(seconds: 3),
       onTimeout: () {
-        debugPrint("⚠️ AudioService init timeout, melanjutkan di latar belakang...");
+        debugPrint("⚠️ AudioService timeout, continuing...");
         return null as AudioHandler;
       },
-    );
-    debugPrint("✅ AudioService berhasil aktif di background!");
+    ).catchError((e) {
+      debugPrint("⚠️ AudioService error: $e");
+      return null as AudioHandler;
+    });
+
+    if (globalAudioHandler != null) {
+      debugPrint("✅ AudioService active!");
+    }
   } catch (e) {
-    debugPrint("⚠️ Gagal inisialisasi AudioService: $e");
+    debugPrint("⚠️ AudioService init failed: $e");
   }
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:flutter/foundation.dart';
-import 'soundcloud_scraper.dart'; 
+import 'soundcloud_scraper.dart';
 
 late AudioHandler _audioHandler;
 
@@ -15,7 +14,6 @@ Future<AudioHandler> initAudioService() async {
       androidNotificationChannelDescription: 'Oxide Music Service',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,
-    //  androidNotificationClickStartsService: true,
       androidNotificationIcon: 'mipmap/ic_launcher',
       notificationColor: Color(0xFF8B5CF6),
     ),
@@ -25,24 +23,34 @@ Future<AudioHandler> initAudioService() async {
 
 class AudioServiceHandler extends BaseAudioHandler {
   final _player = AudioPlayer();
+  bool _initialized = false;
 
   AudioServiceHandler() {
     _setupListeners();
   }
 
   void _setupListeners() {
-    // Pipe status playback ke AudioService state
-    _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
+    try {
+      _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
 
-    // Update MediaItem yang sedang diputar ke sistem (Notification bar)
-    _player.sequenceStateStream.listen((sequenceState) {
-      final sequence = sequenceState?.sequence ?? [];
-      final index = sequenceState?.currentIndex ?? 0;
-      if (index < sequence.length) {
-        final item = sequence[index].tag as MediaItem?;
-        this.mediaItem.add(item); // PERBAIKAN: Gunakan this.mediaItem.add()
-      }
-    });
+      _player.sequenceStateStream.listen((sequenceState) {
+        try {
+          final sequence = sequenceState?.sequence ?? [];
+          final index = sequenceState?.currentIndex ?? 0;
+          if (index < sequence.length) {
+            final item = sequence[index].tag as MediaItem?;
+            if (item != null) mediaItem.add(item);
+          }
+        } catch (e) {
+          debugPrint('Error updating media item: $e');
+        }
+      });
+
+      _initialized = true;
+      debugPrint('✅ AudioServiceHandler initialized');
+    } catch (e) {
+      debugPrint('❌ Error setup listeners: $e');
+    }
   }
 
   PlaybackState _transformEvent(PlaybackEvent event) {
@@ -73,34 +81,34 @@ class AudioServiceHandler extends BaseAudioHandler {
     );
   }
 
-  // Method khusus untuk memutar SoundCloudTrack
   Future<void> playSoundCloudTrack(SoundCloudTrack track) async {
     try {
-      // 1. Ekstrak URL audio langsung via scraper
+      debugPrint('🎵 Playing: ${track.title}');
       final directAudioUrl = await SoundCloudScraper.getDirectDownloadUrl(track.url);
-      
+
       if (directAudioUrl.isEmpty) {
-        throw Exception("URL Audio tidak ditemukan");
+        throw Exception('❌ URL Audio tidak ditemukan');
       }
 
-      // 2. Buat MediaItem dengan metadata lengkap dari SoundCloudTrack
+      debugPrint('🔗 Audio URL: $directAudioUrl');
+
       final item = MediaItem(
         id: track.trackId.toString(),
         title: track.title,
         artist: track.artist.name,
         artUri: Uri.tryParse(track.thumbnail),
-        duration: track.duration, // PERBAIKAN: Gunakan durasi asli track
+        duration: track.duration,
       );
 
-      // 3. Set Audio Source & Mainkan
       await _player.setAudioSource(
         AudioSource.uri(Uri.parse(directAudioUrl), tag: item),
       );
-      
-      this.mediaItem.add(item);
+
+      mediaItem.add(item);
       await _player.play();
+      debugPrint('✅ Playing');
     } catch (e) {
-      debugPrint("Error playSoundCloudTrack: $e");
+      debugPrint('❌ Error playSoundCloudTrack: $e');
       rethrow;
     }
   }

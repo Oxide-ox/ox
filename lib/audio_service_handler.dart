@@ -1,6 +1,8 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:flutter/foundation.dart';
+import 'soundcloud_scraper.dart'; // Sesuaikan dengan nama/path file scraper Anda
+
 
 late AudioHandler _audioHandler;
 
@@ -13,7 +15,7 @@ Future<AudioHandler> initAudioService() async {
       androidNotificationChannelDescription: 'Oxide Music Service',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: false,
-      androidNotificationClickStartsService: true,
+    //  androidNotificationClickStartsService: true,
       androidNotificationIcon: 'mipmap/ic_launcher',
       notificationColor: 0xFFFF5500, // Warna khas SoundCloud
     ),

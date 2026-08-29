@@ -227,7 +227,7 @@ final globalAppState = AppState();
 // ==========================================
 
 class MusicPlayerScreen extends StatefulWidget {
-  const MusicPlayerScreen({Key? key}) : super(Key: key);
+  const MusicPlayerScreen({Key? key}) : super(key: key);
 
   @override
   State<MusicPlayerScreen> createState() => _MusicPlayerScreenState();
@@ -237,7 +237,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = const [
-    HomeScreen(),
+    HomeScreenSp(),
     HistoryScreen(),
     PlaylistScreen(),
   ];
@@ -372,14 +372,14 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
 // 4. HOME PAGE (TOP MUSIC INDONESIA 2026 + SEARCH)
 // ==========================================
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+class HomeScreenSp extends StatefulWidget {
+  const HomeScreenSp({Key? key}) : super(key: key);
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<HomeScreenSp> createState() => _HomeScreenSpState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenSpState extends State<HomeScreenSp> {
   final TextEditingController _searchController = TextEditingController();
   List<SoundCloudTrack> _topIndonesia = [];
   List<SoundCloudTrack> _searchResults = [];

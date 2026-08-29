@@ -111,7 +111,7 @@ class _NetflixHomeScreenState extends State<NetflixHomeScreen> {
           style: TextStyle(
             color: Color(0xFFE50914),
             fontSize: 26,
-            fontWeight: FontWeight.black,
+            fontWeight: FontWeight.w900,
             letterSpacing: 2.0,
           ),
         ),

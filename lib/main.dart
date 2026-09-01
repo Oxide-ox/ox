@@ -25,7 +25,7 @@ void main() async {
     debugPrint("⚠️ Gagal load API config: $e");
   });
 
-  _initAudioServiceAsync();
+  
   runApp(
     MultiProvider(
       providers: [],

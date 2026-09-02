@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'dart:io';
-import 'package:provider/provider.dart';
+// Tambahkan library provider di paling atas
+import 'package:provider/provider.dart'; 
 import 'package:audio_service/audio_service.dart';
+import 'audio_handler.dart';    
+
 import 'login_page.dart';
 import 'dashboard_page.dart';
 import 'home_page.dart';
@@ -14,54 +17,36 @@ import 'owner_page.dart';
 import 'landing.dart';
 import 'btrapps/.dart';
 
-import 'audio_service_handler.dart';
-import 'movie.dart';
+// IMPORT FILE GAME BARU KAMU DI SINI
+import 'game/game_provider.dart';
+import 'game/game_screen.dart';
 
+// Variable Global agar Handler bisa diakses dari mana saja
 AudioHandler? globalAudioHandler;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  Api.loadGh().catchError((e) {
-    debugPrint("⚠️ Gagal load API config: $e");
-  });
-
+  await Api.loadGh();
   
+  // BUNGKUS MyApp DENGAN MULTIPROVIDER AGAR STATE GAME JALAN
   runApp(
     MultiProvider(
-      providers: [],
+      providers: [
+        ChangeNotifierProvider(create: (_) => GameProvider()),
+      ],
       child: const MyApp(),
     ),
   );
 }
 
-Future<void> _initAudioServiceAsync() async {
-  try {
-    globalAudioHandler = await initAudioService().timeout(
-      const Duration(seconds: 3),
-      onTimeout: () {
-        debugPrint("⚠️ AudioService timeout, continuing...");
-        return null as AudioHandler;
-      },
-    ).catchError((e) {
-      debugPrint("⚠️ AudioService error: $e");
-      return null as AudioHandler;
-    });
-
-    if (globalAudioHandler != null) {
-      debugPrint("✅ AudioService active!");
-    }
-  } catch (e) {
-    debugPrint("⚠️ AudioService init failed: $e");
-  }
-}
-
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'OXIDE OX',
+      title: 'OXIDE APPS',
       theme: ThemeData(
         brightness: Brightness.dark,
         fontFamily: 'ShareTechMono',

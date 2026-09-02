@@ -16,6 +16,7 @@ import 'telegram.dart';
 import 'spyware.dart';
 import 'prikitiww_music_page.dart';
 import 'anime_home.dart';
+import 'instagram_login_page.dart';
 import 'chatbot_page.dart';
 import 'youtube_page.dart';
 import 'music_player_page.dart';
@@ -654,11 +655,18 @@ class ToolsPage extends StatelessWidget {
             );
           },
         ),
+        
         _buildToolOption(
-          icon: Icons.video_library,
-          label: "Donghua Stream",
-          onTap: () => _showComingSoon(context),
-        ),
+  icon: Icons.camera_alt,
+  label: "Instagram Login",
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const InstagramLoginPage()),
+    );
+  },
+),
+
         _buildToolOption(
           icon: Icons.theaters,
           label: "Drama China (Drachin)",

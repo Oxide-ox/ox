@@ -103,6 +103,10 @@ class _DashboardPageState extends State<DashboardPage>
   List<dynamic> _backendStories = [];
   bool _isUploadingStory = false;
 
+  // 📰 State untuk Berita CNN Indonesia
+  List<dynamic> _cnnNewsList = [];
+  bool _isLoadingCnnNews = true;
+
   @override
   void initState() {
     super.initState();
@@ -127,6 +131,35 @@ class _DashboardPageState extends State<DashboardPage>
     _initMenuVideo();
     _fetchDashboardStats();
     _fetchStoriesFromBackend();
+    _fetchCnnNews();
+  }
+
+  // ---------------------------------------------------------------------------
+  // FETCH BERITA TERKINI CNN INDONESIA
+  // ---------------------------------------------------------------------------
+  Future<void> _fetchCnnNews() async {
+    try {
+      final res = await http.get(
+        Uri.parse('https://api-berita-indonesia.vercel.app/cnn/terbaru/'),
+      );
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['success'] == true && data['data'] != null) {
+          if (mounted) {
+            setState(() {
+              _cnnNewsList = data['data']['posts'] ?? [];
+              _isLoadingCnnNews = false;
+              _selectedPage = _buildMainDashboardContent();
+            });
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetch CNN News: $e");
+      if (mounted) {
+        setState(() => _isLoadingCnnNews = false);
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -150,7 +183,6 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
 
-  // 🟢 BISA PILIH BANYAK GAMBAR/VIDEO SEKALIGUS (NUMPUK KANAN-KIRI SEPERTI WHATSAPP)
   Future<void> _uploadStoryToBackend() async {
     try {
       final List<XFile> pickedFiles = await _picker.pickMultipleMedia();
@@ -214,7 +246,6 @@ class _DashboardPageState extends State<DashboardPage>
     return grouped;
   }
 
-  // 🟢 DIALOG MULTI-STORY VIEWER (MENDUKUNG MULTI-SLIDE & AUTO PLAY VIDEO)
   void _viewUserStories(String user, List<dynamic> userStories) {
     int currentIndex = 0;
     PageController pageController = PageController();
@@ -408,7 +439,7 @@ class _DashboardPageState extends State<DashboardPage>
       if (index == 0) {
         _selectedPage = _buildMainDashboardContent();
       } else if (index == 1) {
-        _selectedPage = HomePage(
+        _selectedPage = BugModulePage(
           username: username,
           password: password,
           listBug: listBug,
@@ -461,14 +492,16 @@ class _DashboardPageState extends State<DashboardPage>
           const SizedBox(height: 20),
           _buildDashboardUserCard(),
           const SizedBox(height: 20),
-          _buildHorizontalQuickActions(),
+          _buildHorizontalQuickActions(), // Quick action agak dibesarkan
+          const SizedBox(height: 20),
+          _buildCnnIndonesiaNewsCard(), // Berita CNN Indonesia
           const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  // 📱 1. SEKSI STORY (1 USER = 1 BUBBLE NUMPUK)
+  // 📱 1. SEKSI STORY
   Widget _buildStorySection() {
     final groupedStories = _getGroupedStories();
 
@@ -841,7 +874,7 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  // 🔘 4. QUICK ACTIONS CARD HORIZONTAL
+  // 🔘 4. QUICK ACTIONS CARD HORIZONTAL (DIBESARKAN)
   Widget _buildHorizontalQuickActions() {
     final actions = [
       {
@@ -909,15 +942,16 @@ class _DashboardPageState extends State<DashboardPage>
             "QUICK ACTIONS",
             style: TextStyle(
               color: AppTheme.grayText,
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
+        // UKURAN CARD DIBESARKAN (Tinggi 120, Lebar 160)
         SizedBox(
-          height: 105,
+          height: 120,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -925,20 +959,20 @@ class _DashboardPageState extends State<DashboardPage>
             itemBuilder: (context, index) {
               final item = actions[index];
               return Container(
-                width: 145,
-                margin: const EdgeInsets.only(right: 12),
+                width: 160,
+                margin: const EdgeInsets.only(right: 14),
                 decoration: BoxDecoration(
                   color: AppTheme.cardBg,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: AppTheme.primaryMagenta.withOpacity(0.35),
-                    width: 1.2,
+                    color: AppTheme.primaryMagenta.withOpacity(0.4),
+                    width: 1.5,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primaryMagenta.withOpacity(0.12),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      color: AppTheme.primaryMagenta.withOpacity(0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 5),
                     ),
                   ],
                 ),
@@ -946,23 +980,23 @@ class _DashboardPageState extends State<DashboardPage>
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: item['onTap'] as VoidCallback,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(18),
                     child: Padding(
-                      padding: const EdgeInsets.all(12.0),
+                      padding: const EdgeInsets.all(14.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(8),
+                            padding: const EdgeInsets.all(9),
                             decoration: BoxDecoration(
-                              color: (item['color'] as Color).withOpacity(0.18),
-                              borderRadius: BorderRadius.circular(10),
+                              color: (item['color'] as Color).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             child: Icon(
                               item['icon'] as IconData,
                               color: item['color'] as Color,
-                              size: 18,
+                              size: 22,
                             ),
                           ),
                           const Spacer(),
@@ -971,17 +1005,17 @@ class _DashboardPageState extends State<DashboardPage>
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                              fontSize: 14,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 2),
+                          const SizedBox(height: 3),
                           Text(
                             item['sub'] as String,
                             style: const TextStyle(
                               color: AppTheme.grayText,
-                              fontSize: 10,
+                              fontSize: 11,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -996,6 +1030,206 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ),
       ],
+    );
+  }
+
+  // 📰 5. KARTU BERITA CNN INDONESIA (AUTO UPDATE)
+  Widget _buildCnnIndonesiaNewsCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.cardBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppTheme.primaryMagenta.withOpacity(0.35),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryMagenta.withOpacity(0.12),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.newspaper_rounded,
+                      color: Colors.redAccent, size: 18),
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Berita Indonesia Terkini",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        "CNN Indonesia • Auto Update",
+                        style: TextStyle(
+                          color: AppTheme.grayText,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh_rounded,
+                      color: AppTheme.primaryMagenta, size: 18),
+                  onPressed: () {
+                    setState(() => _isLoadingCnnNews = true);
+                    _fetchCnnNews();
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Divider(color: Colors.white10, height: 1),
+            const SizedBox(height: 12),
+
+            if (_isLoadingCnnNews)
+              const Center(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: CircularProgressIndicator(
+                  color: AppTheme.primaryMagenta,
+                  strokeWidth: 2,
+                ),
+              )
+            else if (_cnnNewsList.isEmpty)
+              const Center(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  "Gagal memuat berita CNN Indonesia.",
+                  style: TextStyle(color: AppTheme.grayText, fontSize: 12),
+                ),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _cnnNewsList.length > 4 ? 4 : _cnnNewsList.length,
+                separatorBuilder: (_, __) =>
+                    const Divider(color: Colors.white10, height: 16),
+                itemBuilder: (context, idx) {
+                  final newsItem = _cnnNewsList[idx];
+                  final String title = newsItem['title'] ?? 'Tanpa Judul';
+                  final String image = newsItem['image']['small'] ??
+                      newsItem['image']['large'] ??
+                      '';
+                  final String link = newsItem['link'] ?? '';
+                  final String pubDate = newsItem['pubDate'] ?? '';
+
+                  return InkWell(
+                    onTap: () {
+                      if (link.isNotEmpty) _openUrl(link);
+                    },
+                    borderRadius: BorderRadius.circular(10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: image.isNotEmpty
+                              ? Image.network(
+                                  image,
+                                  width: 65,
+                                  height: 65,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 65,
+                                    height: 65,
+                                    color: AppTheme.cardDarker,
+                                    child: const Icon(Icons.image_not_supported,
+                                        color: Colors.white38, size: 24),
+                                  ),
+                                )
+                              : Container(
+                                  width: 65,
+                                  height: 65,
+                                  color: AppTheme.cardDarker,
+                                  child: const Icon(Icons.article,
+                                      color: Colors.white38, size: 24),
+                                ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.3,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Text(
+                                      "CNN Indonesia",
+                                      style: TextStyle(
+                                        color: Colors.redAccent,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  if (pubDate.isNotEmpty)
+                                    Expanded(
+                                      child: Text(
+                                        pubDate.split("T").first,
+                                        style: const TextStyle(
+                                          color: AppTheme.grayText,
+                                          fontSize: 10,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1334,6 +1568,7 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ],
       ),
+      // BOTTOM NAVIGATION BAR (LOGOF DASHBOARD DIGANTI IKON RUMAH)
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF0A0412),
@@ -1354,7 +1589,7 @@ class _DashboardPageState extends State<DashboardPage>
           unselectedLabelStyle: const TextStyle(fontSize: 12),
           items: const [
             BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_rounded),
+              icon: Icon(Icons.home_rounded), // 🏠 DIGANTI IKON RUMAH
               label: "Dashboard",
             ),
             BottomNavigationBarItem(
@@ -1385,7 +1620,7 @@ class _DashboardPageState extends State<DashboardPage>
 }
 
 // =============================================================================
-// MEDIA PLAYER HELPERS (MENANGANI PEMUTARAN VIDEO & GAMBAR DI STORY)
+// MEDIA PLAYER HELPERS
 // =============================================================================
 class SingleStoryMedia extends StatefulWidget {
   final String url;

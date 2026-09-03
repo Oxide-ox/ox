@@ -41,7 +41,7 @@ class _InstagramLoginPageState extends State<InstagramLoginPage> {
         // Berhasil login, masuk ke Feed Utama Instagram
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const InstagramMainFeedPage()),
+          MaterialPageRoute(builder: (_) => InstagramMainFeedPage()),
         );
       }
     } on FirebaseAuthException catch (e) {

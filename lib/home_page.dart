@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 
-import 'nomor_page.dart';
+import 'nomer_page.dart';
 import 'group_page.dart';
 
 class BugModulePage extends StatefulWidget {

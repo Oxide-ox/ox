@@ -82,7 +82,7 @@ class MyApp extends StatelessWidget {
           case '/home':
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
-              builder: (_) => HomePage(
+              builder: (_) => BugModulePage(
                 username: args['username'],
                 password: args['password'],
                 listBug: List<Map<String, dynamic>>.from(args['listBug'] ?? []),

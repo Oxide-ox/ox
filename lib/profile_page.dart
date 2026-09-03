@@ -1,21 +1,19 @@
-import 'package:clone_instagram/app/model/images_url.dart';
-import 'package:clone_instagram/app/modules/home/store/home_store.dart';
-import 'package:clone_instagram/app/widgets/profile_label_count.dart';
-import 'package:clone_instagram/app/utils/colors.dart';
+import 'package:clone_instagram/model/images_url.dart';
+import 'package:clone_instagram/modules/home/store/home_store.dart';
+import 'package:clone_instagram/widgets/profile_label_count.dart';
+import 'package:clone_instagram/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_modular/flutter_modular.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  final String? username;
+  const ProfilePage({super.key, this.username});
 
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final HomeStore controller = Modular.get();
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController bioController = TextEditingController();
 
@@ -63,7 +61,7 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(width: 5),
           Text(
             controller.userModel.username,
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               color: Colors.black,
               fontSize: 20,
               fontWeight: FontWeight.w500,
@@ -151,7 +149,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: 4),
                         Text(
                           'Novo',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                             color: Colors.black,
@@ -179,7 +177,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     borderRadius: BorderRadius.circular(5)),
                 child: Text(
                   'Editar perfil',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: Colors.black,
@@ -208,13 +206,13 @@ class _ProfilePageState extends State<ProfilePage> {
         children: [
           Text(
             controller.userModel.username,
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            style: TextStyle(fontWeight: FontWeight.w600),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Text(
               controller.userModel.bio,
-              style: GoogleFonts.poppins(color: Colors.black),
+              style: TextStyle(color: Colors.black),
             ),
           ),
         ],

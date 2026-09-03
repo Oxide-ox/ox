@@ -26,7 +26,7 @@ class NHomePage extends StatefulWidget {
   });
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<NHomePage> createState() => _NHomePageState();
 }
 
 class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {

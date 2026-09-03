@@ -1106,7 +1106,7 @@ class _DashboardPageState extends State<DashboardPage>
             const SizedBox(height: 12),
 
             if (_isLoadingCnnNews)
-              const Center(
+              const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
                 child: CircularProgressIndicator(
                   color: AppTheme.primaryMagenta,
@@ -1114,7 +1114,7 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
               )
             else if (_cnnNewsList.isEmpty)
-              const Center(
+              const Padding(
                 padding: EdgeInsets.symmetric(vertical: 20),
                 child: Text(
                   "Gagal memuat berita CNN Indonesia.",

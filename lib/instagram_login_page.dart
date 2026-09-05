@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'instagram_feed_page.dart'; // Halaman Feed IG yang udah dipindah
+import 'instagram_feed_page.dart';
 
 class InstagramLoginPage extends StatefulWidget {
   const InstagramLoginPage({super.key});
@@ -14,7 +14,6 @@ class _InstagramLoginPageState extends State<InstagramLoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
-  // Tema Warna Oxide2
   final Color bgDark = const Color(0xFF0D0D0E);
   final Color cardBg = const Color(0xFF160A22);
   final Color primaryRed = const Color(0xFFD32F2F);
@@ -33,12 +32,10 @@ class _InstagramLoginPageState extends State<InstagramLoginPage> {
     setState(() => _isLoading = true);
 
     try {
-      // Login langsung lewat SDK Firebase Auth
       UserCredential userCredential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
 
       if (userCredential.user != null && mounted) {
-        // Berhasil login, masuk ke Feed Utama Instagram
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => InstagramMainFeedPage()),
@@ -91,7 +88,6 @@ class _InstagramLoginPageState extends State<InstagramLoginPage> {
               ),
               const SizedBox(height: 48),
 
-              // Form Email
               TextField(
                 controller: _emailController,
                 style: const TextStyle(color: Colors.white),
@@ -108,7 +104,6 @@ class _InstagramLoginPageState extends State<InstagramLoginPage> {
               ),
               const SizedBox(height: 16),
 
-              // Form Password
               TextField(
                 controller: _passwordController,
                 obscureText: true,
@@ -126,7 +121,6 @@ class _InstagramLoginPageState extends State<InstagramLoginPage> {
               ),
               const SizedBox(height: 24),
 
-              // Button Login
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -162,9 +156,7 @@ class _InstagramLoginPageState extends State<InstagramLoginPage> {
                       style: TextStyle(color: Colors.grey.shade400),
                     ),
                     GestureDetector(
-                      onTap: () {
-                        // Arahkan ke halaman Register jika ada
-                      },
+                      onTap: () {},
                       child: Text(
                         'Daftar',
                         style: TextStyle(

@@ -1,35 +1,60 @@
-import 'package:clone_instagram/app/utils/colors.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:rflutter_alert/rflutter_alert.dart';
 
-alertDialog(
-  context,
-  AlertType type,
+void alertDialog(
+  BuildContext context,
+  dynamic type, // Dibuat dynamic agar signature function tidak merusak panggilan lama
   String title,
   String text,
 ) {
-  Alert(
+  showDialog(
     context: context,
-    type: AlertType.none,
-    title: title,
-    desc: text,
-    style: AlertStyle(
-      backgroundColor: Colors.white,
-      titleStyle:
-          GoogleFonts.poppins(color: Colors.black, fontWeight: FontWeight.w700),
-      descStyle: GoogleFonts.poppins(color: Colors.black),
-    ),
-    buttons: [
-      DialogButton(
-        highlightColor: Colors.transparent,
-        splashColor: Colors.transparent,
-        width: 120,
-        color: blue,
-        child: Text("Ok",
-            style: GoogleFonts.poppins(color: Colors.white, fontSize: 20)),
-        onPressed: () => Navigator.pop(context),
-      )
-    ],
-  ).show();
+    builder: (BuildContext context) {
+      return AlertDialog(
+        backgroundColor: const Color(0xFF160A22), // Tema Gelap Oxide2
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Color(0xFFD32F2F), width: 1),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
+        content: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          Center(
+            child: SizedBox(
+              width: 120,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFD32F2F), // Merah Oxide2
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "Ok",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
 }

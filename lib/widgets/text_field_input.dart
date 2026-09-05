@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class TextFieldInput extends StatelessWidget {
   final TextEditingController controller;
@@ -9,34 +8,39 @@ class TextFieldInput extends StatelessWidget {
   final Function(String)? onChanged;
 
   const TextFieldInput({
-    Key? key,
+    super.key,
     required this.controller,
     required this.hintText,
     required this.textInputType,
     this.isPass = false,
     this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final inputBorder = OutlineInputBorder(
-      borderSide: Divider.createBorderSide(context),
+      borderRadius: BorderRadius.circular(8),
+      borderSide: const BorderSide(color: Colors.white24, width: 1),
     );
 
     return TextField(
       controller: controller,
       onChanged: onChanged,
+      obscureText: isPass,
+      keyboardType: textInputType,
+      style: const TextStyle(color: Colors.white, fontSize: 14),
       decoration: InputDecoration(
         hintText: hintText,
-        focusedBorder: inputBorder,
-        enabledBorder: inputBorder,
+        hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
         filled: true,
-        contentPadding: const EdgeInsets.all(8),
-        hintStyle: GoogleFonts.poppins(),
+        fillColor: const Color(0xFF160A22), // Tema gelap Oxide2
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Color(0xFFD32F2F), width: 1.5), // Merah Oxide2
+        ),
+        enabledBorder: inputBorder,
       ),
-      style: GoogleFonts.poppins(),
-      keyboardType: textInputType,
-      obscureText: isPass,
     );
   }
 }

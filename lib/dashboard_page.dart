@@ -27,22 +27,9 @@ import 'publik_chat.dart';
 import 'tq_to.dart';
 import 'anime_home.dart';
 import 'btrapps/.dart';
+import 'app_theme.dart';
 
 final baseUrl = Api.api;
-
-// =============================================================================
-// KONSTANTA WARNA TEMA GOTHIC MAGENTA & PURPLE
-// =============================================================================
-class AppTheme {
-  static const Color bgDark = Color(0xFF090212);
-  static const Color bgGradientBottom = Color(0xFF140526);
-  static Color cardBg = const Color(0xFF17092C).withOpacity(0.85);
-  static Color cardDarker = const Color(0xFF0F0518);
-  static const Color primaryMagenta = Color(0xFFE6007E);
-  static const Color secondaryPurple = Color(0xFF8E00C7);
-  static const Color whiteText = Colors.white;
-  static const Color grayText = Color(0xFFA0A0AB);
-}
 
 class DashboardPage extends StatefulWidget {
   final String userId;
@@ -103,9 +90,12 @@ class _DashboardPageState extends State<DashboardPage>
   List<dynamic> _backendStories = [];
   bool _isUploadingStory = false;
 
-  // 📰 State untuk Berita CNN Indonesia
   List<dynamic> _cnnNewsList = [];
   bool _isLoadingCnnNews = true;
+
+  bool get _isLight => Theme.of(context).brightness == Brightness.light;
+  Color get _textColor => _isLight ? Colors.black87 : Colors.white;
+  Color get _subTextColor => _isLight ? Colors.black54 : Colors.white70;
 
   @override
   void initState() {
@@ -134,9 +124,6 @@ class _DashboardPageState extends State<DashboardPage>
     _fetchCnnNews();
   }
 
-  // ---------------------------------------------------------------------------
-  // FETCH BERITA TERKINI CNN INDONESIA
-  // ---------------------------------------------------------------------------
   Future<void> _fetchCnnNews() async {
     try {
       final res = await http.get(
@@ -162,9 +149,6 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // LOGIKA BACKEND STORY (MULTI-UPLOAD DENGAN VIDEO & GAMBAR SEPERTI WA)
-  // ---------------------------------------------------------------------------
   Future<void> _fetchStoriesFromBackend() async {
     try {
       final res = await http.get(Uri.parse('$baseUrl/api/stories'));
@@ -222,10 +206,11 @@ class _DashboardPageState extends State<DashboardPage>
       }
 
       if (mounted && successCount > 0) {
+        final theme = Theme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("$successCount Story berhasil dipublikasikan!"),
-            backgroundColor: AppTheme.primaryMagenta,
+            backgroundColor: theme.colorScheme.primary,
           ),
         );
         _fetchStoriesFromBackend();
@@ -249,6 +234,8 @@ class _DashboardPageState extends State<DashboardPage>
   void _viewUserStories(String user, List<dynamic> userStories) {
     int currentIndex = 0;
     PageController pageController = PageController();
+    final theme = Theme.of(context);
+    final isNeo = themeModeNotifier.value != 0;
 
     showDialog(
       context: context,
@@ -260,9 +247,19 @@ class _DashboardPageState extends State<DashboardPage>
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.cardBg,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppTheme.primaryMagenta, width: 1.5),
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(isNeo ? 8 : 20),
+                border: Border.all(
+                  color: isNeo ? Colors.black : theme.colorScheme.primary,
+                  width: isNeo ? 3 : 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                    blurRadius: isNeo ? 0 : 15,
+                    offset: isNeo ? const Offset(5, 5) : const Offset(0, 5),
+                  ),
+                ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -271,12 +268,12 @@ class _DashboardPageState extends State<DashboardPage>
                     children: List.generate(userStories.length, (idx) {
                       return Expanded(
                         child: Container(
-                          height: 3,
+                          height: isNeo ? 4 : 3,
                           margin: const EdgeInsets.symmetric(horizontal: 2),
                           decoration: BoxDecoration(
                             color: idx == currentIndex
-                                ? AppTheme.primaryMagenta
-                                : Colors.white24,
+                                ? theme.colorScheme.primary
+                                : (_isLight ? Colors.black12 : Colors.white24),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -287,17 +284,19 @@ class _DashboardPageState extends State<DashboardPage>
 
                   Row(
                     children: [
-                      const Icon(Icons.history_toggle_off_rounded,
-                          color: AppTheme.primaryMagenta, size: 18),
+                      Icon(Icons.history_toggle_off_rounded,
+                          color: theme.colorScheme.primary, size: 18),
                       const SizedBox(width: 8),
                       Text(
                         user,
-                        style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: _textColor,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const Spacer(),
                       IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white70),
+                        icon: Icon(Icons.close, color: _subTextColor),
                         onPressed: () => Navigator.pop(context),
                       )
                     ],
@@ -316,7 +315,7 @@ class _DashboardPageState extends State<DashboardPage>
                         final story = userStories[idx];
                         String imgUrl = story['imageUrl'] ?? '';
                         return ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(isNeo ? 6 : 14),
                           child: SingleStoryMedia(url: imgUrl),
                         );
                       },
@@ -329,8 +328,8 @@ class _DashboardPageState extends State<DashboardPage>
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back_ios,
-                              color: AppTheme.primaryMagenta, size: 18),
+                          icon: Icon(Icons.arrow_back_ios,
+                              color: theme.colorScheme.primary, size: 18),
                           onPressed: currentIndex > 0
                               ? () => pageController.previousPage(
                                     duration: const Duration(milliseconds: 300),
@@ -340,12 +339,11 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                         Text(
                           "${currentIndex + 1} / ${userStories.length}",
-                          style: const TextStyle(
-                              color: AppTheme.grayText, fontSize: 12),
+                          style: TextStyle(color: _subTextColor, fontSize: 12),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.arrow_forward_ios,
-                              color: AppTheme.primaryMagenta, size: 18),
+                          icon: Icon(Icons.arrow_forward_ios,
+                              color: theme.colorScheme.primary, size: 18),
                           onPressed: currentIndex < userStories.length - 1
                               ? () => pageController.nextPage(
                                     duration: const Duration(milliseconds: 300),
@@ -365,9 +363,6 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // FOTO PROFIL LOCAL & DASHBOARD STATS
-  // ---------------------------------------------------------------------------
   Future<void> _pickProfileImage() async {
     try {
       final XFile? pickedFile =
@@ -477,9 +472,6 @@ class _DashboardPageState extends State<DashboardPage>
     Navigator.pop(context);
   }
 
-  // ===========================================================================
-  // TAMPILAN KONTEN DASHBOARD UTAMA
-  // ===========================================================================
   Widget _buildMainDashboardContent() {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -492,18 +484,19 @@ class _DashboardPageState extends State<DashboardPage>
           const SizedBox(height: 20),
           _buildDashboardUserCard(),
           const SizedBox(height: 20),
-          _buildHorizontalQuickActions(), // Quick action agak dibesarkan
+          _buildHorizontalQuickActions(),
           const SizedBox(height: 20),
-          _buildCnnIndonesiaNewsCard(), // Berita CNN Indonesia
+          _buildCnnIndonesiaNewsCard(),
           const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  // 📱 1. SEKSI STORY
   Widget _buildStorySection() {
     final groupedStories = _getGroupedStories();
+    final theme = Theme.of(context);
+    final isNeo = themeModeNotifier.value != 0;
 
     return SizedBox(
       height: 95,
@@ -525,40 +518,44 @@ class _DashboardPageState extends State<DashboardPage>
                         height: 62,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: AppTheme.primaryMagenta, width: 2),
+                          border: Border.all(
+                            color: isNeo ? Colors.black : theme.colorScheme.primary,
+                            width: isNeo ? 3 : 2,
+                          ),
                         ),
                         child: ClipOval(
                           child: _isUploadingStory
-                              ? const Padding(
-                                  padding: EdgeInsets.all(16.0),
-                                  child: CircularProgressIndicator(
-                                    color: AppTheme.primaryMagenta,
-                                    strokeWidth: 2,
-                                  ),
+                              ? CircularProgressIndicator(
+                                  color: theme.colorScheme.primary,
+                                  strokeWidth: 2,
                                 )
                               : _profileImage != null
                                   ? Image.file(_profileImage!, fit: BoxFit.cover)
                                   : Container(
-                                      color: AppTheme.cardDarker,
-                                      child: const Icon(Icons.person, color: Colors.white70),
+                                      color: theme.colorScheme.surface,
+                                      child: Icon(Icons.person, color: _subTextColor),
                                     ),
                         ),
                       ),
                       Container(
                         padding: const EdgeInsets.all(2),
-                        decoration: const BoxDecoration(
-                          color: AppTheme.primaryMagenta,
+                        decoration: BoxDecoration(
+                          color: isNeo ? theme.colorScheme.secondary : theme.colorScheme.primary,
                           shape: BoxShape.circle,
+                          border: isNeo ? Border.all(color: Colors.black, width: 1.5) : null,
                         ),
                         child: const Icon(Icons.add, color: Colors.white, size: 16),
                       ),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  const Text(
+                  Text(
                     "Buat Story",
                     style: TextStyle(
-                        color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                      color: _textColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),
@@ -572,7 +569,9 @@ class _DashboardPageState extends State<DashboardPage>
                 child: Text(
                   "Belum ada story",
                   style: TextStyle(
-                      color: AppTheme.grayText.withOpacity(0.5), fontSize: 11),
+                    color: _subTextColor,
+                    fontSize: 11,
+                  ),
                 ),
               ),
             )
@@ -592,18 +591,19 @@ class _DashboardPageState extends State<DashboardPage>
                         width: 62,
                         height: 62,
                         padding: const EdgeInsets.all(2.5),
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
+                          border: isNeo ? Border.all(color: Colors.black, width: 2) : null,
                           gradient: LinearGradient(
                             colors: [
-                              AppTheme.primaryMagenta,
-                              AppTheme.secondaryPurple
+                              theme.colorScheme.primary,
+                              theme.colorScheme.secondary,
                             ],
                           ),
                         ),
                         child: Container(
-                          decoration: const BoxDecoration(
-                            color: AppTheme.bgDark,
+                          decoration: BoxDecoration(
+                            color: theme.scaffoldBackgroundColor,
                             shape: BoxShape.circle,
                           ),
                           padding: const EdgeInsets.all(2),
@@ -618,8 +618,10 @@ class _DashboardPageState extends State<DashboardPage>
                         child: Text(
                           userKey,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(
-                              color: AppTheme.grayText, fontSize: 11),
+                          style: TextStyle(
+                            color: _subTextColor,
+                            fontSize: 11,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -634,21 +636,29 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  // 📰 2. NEWS CAROUSEL SECTION
   Widget _buildNewsCarouselSection() {
+    final theme = Theme.of(context);
+    final isNeo = themeModeNotifier.value != 0;
+
     if (newsList.isEmpty) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16),
         height: 210,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: AppTheme.cardBg,
-          border: Border.all(color: AppTheme.primaryMagenta.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(isNeo ? 8 : 20),
+          color: theme.colorScheme.surface,
+          border: Border.all(
+            color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+            width: isNeo ? 3.0 : 1.0,
+          ),
+          boxShadow: isNeo
+              ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(5, 5))]
+              : null,
         ),
-        child: const Center(
+        child: Center(
           child: Text(
             "Tidak ada berita terbaru",
-            style: TextStyle(color: AppTheme.grayText),
+            style: TextStyle(color: _subTextColor),
           ),
         ),
       );
@@ -667,25 +677,37 @@ class _DashboardPageState extends State<DashboardPage>
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppTheme.primaryMagenta.withOpacity(0.3)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryMagenta.withOpacity(0.15),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
+                  borderRadius: BorderRadius.circular(isNeo ? 8 : 20),
+                  color: theme.colorScheme.surface,
+                  border: Border.all(
+                    color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                    width: isNeo ? 3.0 : 1.0,
+                  ),
+                  boxShadow: isNeo
+                      ? [
+                          const BoxShadow(
+                            color: Colors.black,
+                            blurRadius: 0,
+                            offset: Offset(5, 5),
+                          )
+                        ]
+                      : [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.15),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                 ),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(isNeo ? 5 : 20),
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
                       if (item['image'] != null && item['image'].toString().isNotEmpty)
                         NewsMedia(url: item['image'])
                       else
-                        Container(color: AppTheme.cardDarker),
+                        Container(color: theme.colorScheme.surface),
                       Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -717,7 +739,9 @@ class _DashboardPageState extends State<DashboardPage>
                             Text(
                               item['desc'] ?? '',
                               style: const TextStyle(
-                                  color: AppTheme.grayText, fontSize: 12),
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -733,7 +757,7 @@ class _DashboardPageState extends State<DashboardPage>
         ),
         const SizedBox(height: 8),
         Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisAlignment: Main.center,
           children: List.generate(
             newsList.length,
             (index) => AnimatedContainer(
@@ -744,8 +768,8 @@ class _DashboardPageState extends State<DashboardPage>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
                 color: _currentNewsIndex == index
-                    ? AppTheme.primaryMagenta
-                    : Colors.white24,
+                    ? theme.colorScheme.primary
+                    : (_isLight ? Colors.black26 : Colors.white24),
               ),
             ),
           ),
@@ -754,28 +778,41 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  // 📊 3. CARD USER DASHBOARD
   Widget _buildDashboardUserCard() {
+    final theme = Theme.of(context);
+    final isNeo = themeModeNotifier.value != 0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: AppTheme.cardBg,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: AppTheme.primaryMagenta.withOpacity(0.3)),
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(isNeo ? 8 : 22),
+          border: Border.all(
+            color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+            width: isNeo ? 3.0 : 1.0,
+          ),
           image: const DecorationImage(
             image: AssetImage('assets/images/logo.png'),
             fit: BoxFit.cover,
             colorFilter: ColorFilter.mode(Color(0xEE0B0314), BlendMode.darken),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryMagenta.withOpacity(0.12),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          boxShadow: isNeo
+              ? [
+                  const BoxShadow(
+                    color: Colors.black,
+                    blurRadius: 0,
+                    offset: Offset(5, 5),
+                  )
+                ]
+              : [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withOpacity(0.12),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
         ),
         child: Column(
           children: [
@@ -788,7 +825,10 @@ class _DashboardPageState extends State<DashboardPage>
                     height: 54,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppTheme.primaryMagenta, width: 2),
+                      border: Border.all(
+                        color: isNeo ? Colors.black : theme.colorScheme.primary,
+                        width: isNeo ? 2.5 : 2.0,
+                      ),
                     ),
                     child: ClipOval(
                       child: _profileImage != null
@@ -803,28 +843,30 @@ class _DashboardPageState extends State<DashboardPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         username,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                            horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryMagenta.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(6),
+                          color: isNeo ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(isNeo ? 2 : 6),
                           border: Border.all(
-                              color: AppTheme.primaryMagenta.withOpacity(0.4)),
+                            color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.4),
+                            width: isNeo ? 1.5 : 1.0,
+                          ),
                         ),
                         child: Text(
                           role.toUpperCase(),
-                          style: const TextStyle(
-                            color: AppTheme.primaryMagenta,
+                          style: TextStyle(
+                            color: isNeo ? Colors.black : theme.colorScheme.primary,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
@@ -836,10 +878,13 @@ class _DashboardPageState extends State<DashboardPage>
               ],
             ),
             const SizedBox(height: 16),
-            const Divider(color: Colors.white10),
+            Divider(
+              color: isNeo ? Colors.black : Colors.white10,
+              thickness: isNeo ? 2 : 1,
+            ),
             const SizedBox(height: 12),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: Main.spaceAround,
               children: [
                 _buildStatItem("Online User", "$onlineUsers User",
                     Icons.people_outline_rounded),
@@ -855,12 +900,16 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   Widget _buildStatItem(String label, String value, IconData icon) {
+    final theme = Theme.of(context);
+
     return Column(
       children: [
-        Icon(icon, color: AppTheme.primaryMagenta, size: 20),
+        Icon(icon, color: theme.colorScheme.primary, size: 20),
         const SizedBox(height: 6),
-        Text(label,
-            style: const TextStyle(color: AppTheme.grayText, fontSize: 11)),
+        const Text(
+          label,
+          style: TextStyle(color: Colors.white70, fontSize: 11),
+        ),
         const SizedBox(height: 2),
         Text(
           value,
@@ -874,14 +923,16 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  // 🔘 4. QUICK ACTIONS CARD HORIZONTAL (DIBESARKAN)
   Widget _buildHorizontalQuickActions() {
+    final theme = Theme.of(context);
+    final isNeo = themeModeNotifier.value != 0;
+
     final actions = [
       {
         "title": "Manage Sender",
         "sub": "WA Sender Tools",
         "icon": FontAwesomeIcons.whatsapp,
-        "color": AppTheme.primaryMagenta,
+        "color": isNeo ? theme.colorScheme.secondary : theme.colorScheme.primary,
         "onTap": () {
           Navigator.push(
             context,
@@ -899,7 +950,7 @@ class _DashboardPageState extends State<DashboardPage>
         "title": "Publik Chat",
         "sub": "Komunitas Global",
         "icon": Icons.chat_bubble_outline_rounded,
-        "color": AppTheme.secondaryPurple,
+        "color": theme.colorScheme.primary,
         "onTap": () {
           Navigator.push(
             context,
@@ -916,7 +967,7 @@ class _DashboardPageState extends State<DashboardPage>
         "title": "Channel Info",
         "sub": "Telegram Updates",
         "icon": FontAwesomeIcons.telegram,
-        "color": const Color(0xFF0088CC),
+        "color": isNeo ? theme.colorScheme.primary : const Color(0xFF0088CC),
         "onTap": () => _openUrl("https://t.me/AllinformationVirz"),
       },
       {
@@ -936,12 +987,12 @@ class _DashboardPageState extends State<DashboardPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Text(
             "QUICK ACTIONS",
             style: TextStyle(
-              color: AppTheme.grayText,
+              color: _textColor,
               fontSize: 13,
               fontWeight: FontWeight.bold,
               letterSpacing: 1.2,
@@ -949,7 +1000,6 @@ class _DashboardPageState extends State<DashboardPage>
           ),
         ),
         const SizedBox(height: 10),
-        // UKURAN CARD DIBESARKAN (Tinggi 120, Lebar 160)
         SizedBox(
           height: 120,
           child: ListView.builder(
@@ -962,25 +1012,33 @@ class _DashboardPageState extends State<DashboardPage>
                 width: 160,
                 margin: const EdgeInsets.only(right: 14),
                 decoration: BoxDecoration(
-                  color: AppTheme.cardBg,
-                  borderRadius: BorderRadius.circular(18),
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(isNeo ? 8 : 18),
                   border: Border.all(
-                    color: AppTheme.primaryMagenta.withOpacity(0.4),
-                    width: 1.5,
+                    color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.4),
+                    width: isNeo ? 3.0 : 1.5,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.primaryMagenta.withOpacity(0.15),
-                      blurRadius: 12,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
+                  boxShadow: isNeo
+                      ? [
+                          const BoxShadow(
+                            color: Colors.black,
+                            blurRadius: 0,
+                            offset: Offset(4, 4),
+                          )
+                        ]
+                      : [
+                          BoxShadow(
+                            color: theme.colorScheme.primary.withOpacity(0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                 ),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: item['onTap'] as VoidCallback,
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(isNeo ? 8 : 18),
                     child: Padding(
                       padding: const EdgeInsets.all(14.0),
                       child: Column(
@@ -990,20 +1048,21 @@ class _DashboardPageState extends State<DashboardPage>
                           Container(
                             padding: const EdgeInsets.all(9),
                             decoration: BoxDecoration(
-                              color: (item['color'] as Color).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(12),
+                              color: isNeo ? (item['color'] as Color) : (item['color'] as Color).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(isNeo ? 4 : 12),
+                              border: isNeo ? Border.all(color: Colors.black, width: 1.5) : null,
                             ),
                             child: Icon(
                               item['icon'] as IconData,
-                              color: item['color'] as Color,
+                              color: isNeo ? Colors.black : item['color'] as Color,
                               size: 22,
                             ),
                           ),
                           const Spacer(),
                           Text(
                             item['title'] as String,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: _textColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -1013,8 +1072,8 @@ class _DashboardPageState extends State<DashboardPage>
                           const SizedBox(height: 3),
                           Text(
                             item['sub'] as String,
-                            style: const TextStyle(
-                              color: AppTheme.grayText,
+                            style: TextStyle(
+                              color: _subTextColor,
                               fontSize: 11,
                             ),
                             maxLines: 1,
@@ -1033,26 +1092,36 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  // 📰 5. KARTU BERITA CNN INDONESIA (AUTO UPDATE)
   Widget _buildCnnIndonesiaNewsCard() {
+    final theme = Theme.of(context);
+    final isNeo = themeModeNotifier.value != 0;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.cardBg,
-          borderRadius: BorderRadius.circular(20),
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(isNeo ? 8 : 20),
           border: Border.all(
-            color: AppTheme.primaryMagenta.withOpacity(0.35),
-            width: 1.2,
+            color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.35),
+            width: isNeo ? 3.0 : 1.2,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryMagenta.withOpacity(0.12),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          boxShadow: isNeo
+              ? [
+                  const BoxShadow(
+                    color: Colors.black,
+                    blurRadius: 0,
+                    offset: Offset(5, 5),
+                  )
+                ]
+              : [
+                  BoxShadow(
+                    color: theme.colorScheme.primary.withOpacity(0.12),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1062,21 +1131,25 @@ class _DashboardPageState extends State<DashboardPage>
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(8),
+                    color: isNeo ? theme.colorScheme.primary : Colors.red.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(isNeo ? 4 : 8),
+                    border: isNeo ? Border.all(color: Colors.black, width: 1.5) : null,
                   ),
-                  child: const Icon(Icons.newspaper_rounded,
-                      color: Colors.redAccent, size: 18),
+                  child: Icon(
+                    Icons.newspaper_rounded,
+                    color: isNeo ? Colors.black : Colors.redAccent,
+                    size: 18,
+                  ),
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         "Berita Indonesia Terkini",
                         style: TextStyle(
-                          color: Colors.white,
+                          color: _textColor,
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
                         ),
@@ -1084,7 +1157,7 @@ class _DashboardPageState extends State<DashboardPage>
                       Text(
                         "CNN Indonesia • Auto Update",
                         style: TextStyle(
-                          color: AppTheme.grayText,
+                          color: _subTextColor,
                           fontSize: 10,
                         ),
                       ),
@@ -1092,8 +1165,11 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.refresh_rounded,
-                      color: AppTheme.primaryMagenta, size: 18),
+                  icon: Icon(
+                    Icons.refresh_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 18,
+                  ),
                   onPressed: () {
                     setState(() => _isLoadingCnnNews = true);
                     _fetchCnnNews();
@@ -1102,23 +1178,28 @@ class _DashboardPageState extends State<DashboardPage>
               ],
             ),
             const SizedBox(height: 12),
-            const Divider(color: Colors.white10, height: 1),
+            Divider(
+              color: isNeo ? Colors.black : Colors.white10,
+              thickness: isNeo ? 2 : 1,
+            ),
             const SizedBox(height: 12),
 
             if (_isLoadingCnnNews)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: CircularProgressIndicator(
-                  color: AppTheme.primaryMagenta,
-                  strokeWidth: 2,
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 24),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: theme.colorScheme.primary,
+                    strokeWidth: 2,
+                  ),
                 ),
               )
             else if (_cnnNewsList.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Text(
                   "Gagal memuat berita CNN Indonesia.",
-                  style: TextStyle(color: AppTheme.grayText, fontSize: 12),
+                  style: TextStyle(color: _subTextColor, fontSize: 12),
                 ),
               )
             else
@@ -1126,8 +1207,11 @@ class _DashboardPageState extends State<DashboardPage>
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: _cnnNewsList.length > 4 ? 4 : _cnnNewsList.length,
-                separatorBuilder: (_, __) =>
-                    const Divider(color: Colors.white10, height: 16),
+                separatorBuilder: (_, __) => Divider(
+                  color: isNeo ? Colors.black54 : Colors.white10,
+                  height: 16,
+                  thickness: isNeo ? 1.5 : 1.0,
+                ),
                 itemBuilder: (context, idx) {
                   final newsItem = _cnnNewsList[idx];
                   final String title = newsItem['title'] ?? 'Tanpa Judul';
@@ -1146,7 +1230,7 @@ class _DashboardPageState extends State<DashboardPage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(isNeo ? 4 : 8),
                           child: image.isNotEmpty
                               ? Image.network(
                                   image,
@@ -1156,7 +1240,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   errorBuilder: (_, __, ___) => Container(
                                     width: 65,
                                     height: 65,
-                                    color: AppTheme.cardDarker,
+                                    color: theme.colorScheme.surface,
                                     child: const Icon(Icons.image_not_supported,
                                         color: Colors.white38, size: 24),
                                   ),
@@ -1164,7 +1248,7 @@ class _DashboardPageState extends State<DashboardPage>
                               : Container(
                                   width: 65,
                                   height: 65,
-                                  color: AppTheme.cardDarker,
+                                  color: theme.colorScheme.surface,
                                   child: const Icon(Icons.article,
                                       color: Colors.white38, size: 24),
                                 ),
@@ -1176,8 +1260,8 @@ class _DashboardPageState extends State<DashboardPage>
                             children: [
                               Text(
                                 title,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: _textColor,
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                   height: 1.3,
@@ -1192,13 +1276,14 @@ class _DashboardPageState extends State<DashboardPage>
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 6, vertical: 2),
                                     decoration: BoxDecoration(
-                                      color: Colors.red.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(4),
+                                      color: isNeo ? theme.colorScheme.primary : Colors.red.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(isNeo ? 2 : 4),
+                                      border: isNeo ? Border.all(color: Colors.black, width: 1) : null,
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       "CNN Indonesia",
                                       style: TextStyle(
-                                        color: Colors.redAccent,
+                                        color: isNeo ? Colors.black : Colors.redAccent,
                                         fontSize: 9,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -1209,8 +1294,8 @@ class _DashboardPageState extends State<DashboardPage>
                                     Expanded(
                                       child: Text(
                                         pubDate.split("T").first,
-                                        style: const TextStyle(
-                                          color: AppTheme.grayText,
+                                        style: TextStyle(
+                                          color: _subTextColor,
                                           fontSize: 10,
                                         ),
                                         maxLines: 1,
@@ -1233,12 +1318,12 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  // ===========================================================================
-  // DRAWER & APP BAR UTAMA
-  // ===========================================================================
   Widget _buildCustomDrawer() {
+    final theme = Theme.of(context);
+    final isNeo = themeModeNotifier.value != 0;
+
     return Drawer(
-      backgroundColor: AppTheme.bgDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       width: MediaQuery.of(context).size.width * 0.8,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1267,7 +1352,7 @@ class _DashboardPageState extends State<DashboardPage>
                       end: Alignment.bottomCenter,
                       colors: [
                         Colors.black.withOpacity(0.2),
-                        AppTheme.bgDark.withOpacity(0.95),
+                        theme.scaffoldBackgroundColor.withOpacity(0.95),
                       ],
                     ),
                   ),
@@ -1285,13 +1370,16 @@ class _DashboardPageState extends State<DashboardPage>
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                  color: AppTheme.primaryMagenta, width: 2.5),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.primaryMagenta.withOpacity(0.4),
-                                  blurRadius: 15,
-                                )
-                              ],
+                                  color: isNeo ? Colors.black : theme.colorScheme.primary,
+                                  width: isNeo ? 3.0 : 2.5),
+                              boxShadow: isNeo
+                                  ? [const BoxShadow(color: Colors.black, blurRadius: 0)]
+                                  : [
+                                      BoxShadow(
+                                        color: theme.colorScheme.primary.withOpacity(0.4),
+                                        blurRadius: 15,
+                                      )
+                                    ],
                             ),
                             child: ClipOval(
                               child: _profileImage != null
@@ -1302,9 +1390,9 @@ class _DashboardPageState extends State<DashboardPage>
                           ),
                         ),
                         const SizedBox(height: 10),
-                        Text(
+                        const Text(
                           username,
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -1312,8 +1400,8 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                         Text(
                           role.toUpperCase(),
-                          style: const TextStyle(
-                            color: AppTheme.primaryMagenta,
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1437,25 +1525,29 @@ class _DashboardPageState extends State<DashboardPage>
     required VoidCallback onTap,
     bool isLogout = false,
   }) {
+    final theme = Theme.of(context);
+    final isNeo = themeModeNotifier.value != 0;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: isLogout ? Colors.red.withOpacity(0.12) : AppTheme.cardBg,
-        borderRadius: BorderRadius.circular(12),
+        color: isLogout ? Colors.red.withOpacity(0.12) : theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(isNeo ? 6 : 12),
         border: Border.all(
           color: isLogout
-              ? Colors.red.withOpacity(0.4)
-              : AppTheme.primaryMagenta.withOpacity(0.2),
+              ? Colors.red
+              : (isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.2)),
+          width: isNeo ? 2 : 1,
         ),
       ),
       child: ListTile(
         leading: Icon(icon,
-            color: isLogout ? Colors.redAccent : AppTheme.primaryMagenta,
+            color: isLogout ? Colors.redAccent : theme.colorScheme.primary,
             size: 20),
         title: Text(
           label,
           style: TextStyle(
-            color: isLogout ? Colors.redAccent : Colors.white,
+            color: isLogout ? Colors.redAccent : _textColor,
             fontWeight: FontWeight.bold,
             fontSize: 14,
           ),
@@ -1467,146 +1559,196 @@ class _DashboardPageState extends State<DashboardPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.bgDark,
-      drawer: _buildCustomDrawer(),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_rounded,
-                color: AppTheme.primaryMagenta, size: 26),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              username,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              "${role.toUpperCase()} [$expiredDate]",
-              style: const TextStyle(
-                color: AppTheme.grayText,
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ProfilePage(
-                    username: username,
-                    password: password,
-                    role: role,
-                    expiredDate: expiredDate,
-                    sessionKey: sessionKey,
+    return ValueListenableBuilder<int>(
+      valueListenable: themeModeNotifier,
+      builder: (context, modeIndex, child) {
+        ThemeData currentTheme;
+        if (modeIndex == 1) {
+          currentTheme = AppTheme.neoDarkNeon;
+        } else if (modeIndex == 2) {
+          currentTheme = AppTheme.neoCreamPastel;
+        } else {
+          currentTheme = AppTheme.classic;
+        }
+
+        final isNeo = modeIndex != 0;
+
+        return Theme(
+          data: currentTheme,
+          child: Builder(
+            builder: (context) {
+              final theme = Theme.of(context);
+
+              IconData themeIcon;
+              if (modeIndex == 0) {
+                themeIcon = Icons.palette_outlined;
+              } else if (modeIndex == 1) {
+                themeIcon = Icons.bolt_rounded;
+              } else {
+                themeIcon = Icons.wb_sunny_rounded;
+              }
+
+              return Scaffold(
+                backgroundColor: theme.scaffoldBackgroundColor,
+                drawer: _buildCustomDrawer(),
+                appBar: AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  leading: Builder(
+                    builder: (context) => IconButton(
+                      icon: Icon(Icons.menu_rounded,
+                          color: theme.colorScheme.primary, size: 26),
+                      onPressed: () => Scaffold.of(context).openDrawer(),
+                    ),
+                  ),
+                  title: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        username,
+                        style: TextStyle(
+                          color: _textColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        "${role.toUpperCase()} [$expiredDate]",
+                        style: TextStyle(
+                          color: _subTextColor,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    IconButton(
+                      icon: Icon(
+                        themeIcon,
+                        color: theme.colorScheme.primary,
+                        size: 24,
+                      ),
+                      tooltip: "Ganti Tema",
+                      onPressed: () {
+                        themeModeNotifier.value = (themeModeNotifier.value + 1) % 3;
+                      },
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProfilePage(
+                              username: username,
+                              password: password,
+                              role: role,
+                              expiredDate: expiredDate,
+                              sessionKey: sessionKey,
+                            ),
+                          ),
+                        ).then((_) => _loadProfileImage());
+                      },
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isNeo ? Colors.black : theme.colorScheme.primary,
+                            width: isNeo ? 2.0 : 1.5,
+                          ),
+                        ),
+                        child: ClipOval(
+                          child: _profileImage != null
+                              ? Image.file(_profileImage!, fit: BoxFit.cover)
+                              : const Icon(FontAwesomeIcons.userAstronaut,
+                                  color: Colors.white, size: 18),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: Icon(Icons.headset_mic_rounded,
+                          color: theme.colorScheme.primary, size: 22),
+                      onPressed: () => _openUrl("https://t.me/Virzofc"),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                ),
+                body: Stack(
+                  children: [
+                    Positioned(
+                      top: -60,
+                      right: -60,
+                      child: Container(
+                        width: 240,
+                        height: 240,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withOpacity(0.15),
+                              blurRadius: isNeo ? 0 : 100,
+                              spreadRadius: isNeo ? 0 : 30,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SafeArea(
+                      child: FadeTransition(
+                        opacity: _animation,
+                        child: _selectedPage,
+                      ),
+                    ),
+                  ],
+                ),
+                bottomNavigationBar: Container(
+                  decoration: BoxDecoration(
+                    color: theme.scaffoldBackgroundColor,
+                    border: Border(
+                      top: BorderSide(
+                        color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.2),
+                        width: isNeo ? 3 : 1,
+                      ),
+                    ),
+                  ),
+                  child: BottomNavigationBar(
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    type: BottomNavigationBarType.fixed,
+                    selectedItemColor: theme.colorScheme.primary,
+                    unselectedItemColor: _subTextColor,
+                    currentIndex: _bottomNavIndex,
+                    onTap: _onBottomNavTapped,
+                    selectedLabelStyle:
+                        const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                    unselectedLabelStyle: const TextStyle(fontSize: 12),
+                    items: const [
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.home_rounded),
+                        label: "Dashboard",
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(FontAwesomeIcons.whatsapp),
+                        label: "WhatsApp",
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.notifications_none_rounded),
+                        label: "Info",
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.build_circle_outlined),
+                        label: "Tools",
+                      ),
+                    ],
                   ),
                 ),
-              ).then((_) => _loadProfileImage());
+              );
             },
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppTheme.primaryMagenta, width: 1.5),
-              ),
-              child: ClipOval(
-                child: _profileImage != null
-                    ? Image.file(_profileImage!, fit: BoxFit.cover)
-                    : const Icon(FontAwesomeIcons.userAstronaut,
-                        color: Colors.white, size: 18),
-              ),
-            ),
           ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: const Icon(Icons.headset_mic_rounded,
-                color: AppTheme.primaryMagenta, size: 22),
-            onPressed: () => _openUrl("https://t.me/Virzofc"),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Positioned(
-            top: -60,
-            right: -60,
-            child: Container(
-              width: 240,
-              height: 240,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryMagenta.withOpacity(0.15),
-                    blurRadius: 100,
-                    spreadRadius: 30,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SafeArea(
-            child: FadeTransition(
-              opacity: _animation,
-              child: _selectedPage,
-            ),
-          ),
-        ],
-      ),
-      // BOTTOM NAVIGATION BAR (LOGOF DASHBOARD DIGANTI IKON RUMAH)
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFF0A0412),
-          border: Border(
-              top: BorderSide(
-                  color: AppTheme.primaryMagenta.withOpacity(0.2), width: 1)),
-        ),
-        child: BottomNavigationBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          type: BottomNavigationBarType.fixed,
-          selectedItemColor: AppTheme.primaryMagenta,
-          unselectedItemColor: AppTheme.grayText,
-          currentIndex: _bottomNavIndex,
-          onTap: _onBottomNavTapped,
-          selectedLabelStyle:
-              const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontSize: 12),
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_rounded), // 🏠 DIGANTI IKON RUMAH
-              label: "Dashboard",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(FontAwesomeIcons.whatsapp),
-              label: "WhatsApp",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_none_rounded),
-              label: "Info",
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.build_circle_outlined),
-              label: "Tools",
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -1619,9 +1761,6 @@ class _DashboardPageState extends State<DashboardPage>
   }
 }
 
-// =============================================================================
-// MEDIA PLAYER HELPERS
-// =============================================================================
 class SingleStoryMedia extends StatefulWidget {
   final String url;
   const SingleStoryMedia({super.key, required this.url});
@@ -1692,10 +1831,14 @@ class _SingleStoryMediaState extends State<SingleStoryMedia> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (isVideo) {
       if (_isInitializing) {
-        return const Center(
-          child: CircularProgressIndicator(color: AppTheme.primaryMagenta),
+        return Center(
+          child: CircularProgressIndicator(
+            color: theme.colorScheme.primary,
+          ),
         );
       }
       if (_vController != null && _vController!.value.isInitialized) {
@@ -1773,6 +1916,8 @@ class _NewsMediaState extends State<NewsMedia> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (_isVideo(widget.url)) {
       if (_controller != null && _controller!.value.isInitialized) {
         return AspectRatio(
@@ -1780,8 +1925,10 @@ class _NewsMediaState extends State<NewsMedia> {
           child: VideoPlayer(_controller!),
         );
       } else {
-        return const Center(
-          child: CircularProgressIndicator(color: AppTheme.primaryMagenta),
+        return Center(
+          child: CircularProgressIndicator(
+            color: theme.colorScheme.primary,
+          ),
         );
       }
     } else {
@@ -1789,9 +1936,11 @@ class _NewsMediaState extends State<NewsMedia> {
         widget.url,
         fit: BoxFit.cover,
         errorBuilder: (_, __, ___) => Container(
-          color: AppTheme.cardDarker,
-          child: const Icon(Icons.error_outline_rounded,
-              color: AppTheme.primaryMagenta),
+          color: theme.colorScheme.surface,
+          child: Icon(
+            Icons.error_outline_rounded,
+            color: theme.colorScheme.primary,
+          ),
         ),
       );
     }

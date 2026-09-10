@@ -1,5 +1,5 @@
-import 'package:clone_instagram/app/modules/auth/module/auth_module.dart';
-import 'package:clone_instagram/app/modules/login/module/login_module.dart';
+import 'package:modules/auth/module/auth_module.dart';
+import 'package:modules/login/module/login_module.dart';
 import 'package:flutter_modular/flutter_modular.dart';
 
 import 'modules/module/home_module.dart';

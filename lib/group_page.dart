@@ -249,7 +249,7 @@ class _GroupPageState extends State<GroupPage> with TickerProviderStateMixin {
       final bugsParam = selectedBugIds.join(',');
       final res = await http.get(
         Uri.parse(
-          "$baseUrl/raidGrouP?key=$key&target=$rawInput&bug=$bugsParam&sender=$_selectedSenderType",
+          "$baseUrl/raidGroup?key=$key&target=$rawInput&bug=$bugsParam&sender=$_selectedSenderType",
         ),
       );
       final data = jsonDecode(res.body);

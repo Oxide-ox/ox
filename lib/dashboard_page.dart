@@ -757,7 +757,7 @@ class _DashboardPageState extends State<DashboardPage>
         ),
         const SizedBox(height: 8),
         Row(
-          mainAxisAlignment: Main.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
             newsList.length,
             (index) => AnimatedContainer(
@@ -884,7 +884,7 @@ class _DashboardPageState extends State<DashboardPage>
             ),
             const SizedBox(height: 12),
             Row(
-              mainAxisAlignment: Main.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildStatItem("Online User", "$onlineUsers User",
                     Icons.people_outline_rounded),

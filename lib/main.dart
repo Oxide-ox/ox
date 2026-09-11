@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'dart:io';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart'; 
 import 'package:audio_service/audio_service.dart';
 import 'audio_handler.dart';    

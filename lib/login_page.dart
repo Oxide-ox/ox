@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'splash.dart';
+import 'app_theme.dart';
+
 import 'btrapps/.dart';
 import 'buy_access_page.dart';
 

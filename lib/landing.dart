@@ -9,6 +9,8 @@ import 'splash.dart';
 import 'btrapps/.dart';
 import 'login_page.dart';
 import 'buy_access_page.dart';
+import 'app_theme.dart';
+
 
 final baseUrl = Api.api;
 

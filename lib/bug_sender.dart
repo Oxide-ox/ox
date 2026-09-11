@@ -596,7 +596,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
                       : null,
                 ),
                 child: Row(
-                  mainAxisAlignment: Main.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       "GLOBAL SENDER",

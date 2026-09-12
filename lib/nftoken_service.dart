@@ -1,6 +1,20 @@
 import 'dart:async';
 
-// --- CUSTOM EXCEPTIONS ---
+// Exception khusus rate limit
+class RateLimitException implements Exception {
+  final String message;
+  final String formattedTimeLeft;
+
+  RateLimitException({
+    this.message = 'Terlalu banyak permintaan (Rate Limit).',
+    this.formattedTimeLeft = '00:00:00',
+  });
+
+  @override
+  String toString() => message;
+}
+
+// Exception umum NF Token
 class NfTokenException implements Exception {
   final String message;
   NfTokenException([this.message = 'Terjadi kesalahan pada layanan NF Token.']);
@@ -9,66 +23,79 @@ class NfTokenException implements Exception {
   String toString() => message;
 }
 
-class RateLimitException implements Exception {
-  final String message;
-  RateLimitException([this.message = 'Terlalu banyak permintaan (Rate Limit). Coba lagi nanti.']);
+// Sub-model Profile
+class NfTokenProfile {
+  final String country;
+  final String plan;
 
-  @override
-  String toString() => message;
+  NfTokenProfile({
+    this.country = 'ID',
+    this.plan = 'Premium',
+  });
 }
 
-// --- RESULT MODEL ---
+// Sub-model Links
+class NfTokenLinks {
+  final String pc;
+  final String tv;
+
+  NfTokenLinks({
+    this.pc = '',
+    this.tv = '',
+  });
+}
+
+// Model Hasil Token
 class NfTokenResult {
   final String? token;
   final bool isSuccess;
   final String? message;
-  final Map<String, dynamic>? data;
+  final NfTokenProfile profile;
+  final String expiry;
+  final NfTokenLinks links;
 
   NfTokenResult({
     this.token,
     required this.isSuccess,
     this.message,
-    this.data,
-  });
+    NfTokenProfile? profile,
+    this.expiry = '-',
+    NfTokenLinks? links,
+  })  : profile = profile ?? NfTokenProfile(),
+        links = links ?? NfTokenLinks();
 
-  factory NfTokenResult.fromJson(Map<String, dynamic> json) {
-    return NfTokenResult(
-      token: json['token'] as String?,
-      isSuccess: json['success'] ?? true,
-      message: json['message'] as String?,
-      data: json['data'] as Map<String, dynamic>?,
-    );
+  String formatForCopy() {
+    return "Token: $token\nCountry: ${profile.country}\nPlan: ${profile.plan}\nExpired: $expiry\nPC: ${links.pc}\nTV: ${links.tv}";
   }
 }
 
-// --- SERVICE CLASS ---
+// Service Utama
 class NfTokenService {
-  final String baseUrl;
+  int remainingQuota = 10;
+  int maxDailyLimit = 10;
 
-  NfTokenService({this.baseUrl = ''});
+  Future<NfTokenResult> generate() async {
+    await Future.delayed(const Duration(seconds: 1));
 
-  /// Fungsi untuk memproses / mengambil token
-  Future<NfTokenResult> fetchToken(String identifier) async {
-    try {
-      if (identifier.isEmpty) {
-        throw NfTokenException('Identifier tidak boleh kosong');
-      }
-
-      // Simulasi panggilan API (ganti dengan logika HTTP request/backend kamu)
-      await Future.delayed(const Duration(seconds: 1));
-
-      return NfTokenResult(
-        token: 'NFT_${DateTime.now().millisecondsSinceEpoch}',
-        isSuccess: true,
-        message: 'Token berhasil diproses',
-        data: {'id': identifier, 'timestamp': DateTime.now().toIso8601String()},
+    if (remainingQuota <= 0) {
+      throw RateLimitException(
+        message: 'Batas kuota harian telah habis.',
+        formattedTimeLeft: '12:00:00',
       );
-    } on RateLimitException {
-      rethrow;
-    } on NfTokenException {
-      rethrow;
-    } catch (e) {
-      throw NfTokenException('Gagal mengambil token: $e');
     }
+
+    remainingQuota--;
+
+    return NfTokenResult(
+      token: 'NF_${DateTime.now().millisecondsSinceEpoch}',
+      isSuccess: true,
+      message: 'Token berhasil dibuat',
+      expiry: '30 Hari',
+      profile: NfTokenProfile(country: 'Indonesia', plan: 'Ultra HD 4K'),
+      links: NfTokenLinks(
+        pc: 'https://netflix.com/activate?code=PC-12345',
+        tv: 'https://netflix.com/activate?code=TV-67890',
+      ),
+    );
   }
 }

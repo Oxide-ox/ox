@@ -24,7 +24,7 @@ import 'game/game_provider.dart';
 import 'game/game_screen.dart';
 
 // Catatan: Jika 'Api' berasal dari btrapps, sesuaikan nama filenya di sini
-import 'btrapps/api.dart'; 
+import 'btrapps/.dart'; 
 
 AudioHandler? globalAudioHandler;
 

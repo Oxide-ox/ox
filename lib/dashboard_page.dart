@@ -7,6 +7,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:xxo25/login_page.dart' hide AppTheme;
+import 'package:xxo25/app_theme.dart';
 
 import 'nik_check.dart';
 import 'staff_page.dart';

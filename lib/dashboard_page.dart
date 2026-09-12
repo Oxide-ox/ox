@@ -19,7 +19,7 @@ import 'dev_page.dart';
 import 'seller_page.dart';
 import 'change_password_page.dart';
 import 'tools_gateway.dart';
-import 'login_page.dart';
+import 'login_page.dart' hide AppTheme;
 import 'bug_sender.dart';
 import 'contact_page.dart';
 import 'profile_page.dart';
@@ -845,7 +845,7 @@ class _DashboardPageState extends State<DashboardPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         username,
                         style: TextStyle(
                           color: Colors.white,
@@ -908,7 +908,7 @@ class _DashboardPageState extends State<DashboardPage>
       children: [
         Icon(icon, color: theme.colorScheme.primary, size: 20),
         const SizedBox(height: 6),
-        const Text(
+         Text(
           label,
           style: TextStyle(color: Colors.white70, fontSize: 11),
         ),
@@ -1392,7 +1392,7 @@ class _DashboardPageState extends State<DashboardPage>
                           ),
                         ),
                         const SizedBox(height: 10),
-                        const Text(
+                         Text(
                           username,
                           style: TextStyle(
                             color: Colors.white,

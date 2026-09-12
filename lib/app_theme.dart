@@ -12,7 +12,7 @@ class AppTheme {
       surface: Color(0xFF17092C),
       tertiary: Color(0xFFA0A0AB),
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: const Color(0xFF17092C),
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -30,7 +30,7 @@ class AppTheme {
       surface: Color(0xFF1D1135),
       tertiary: Colors.white,
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: const Color(0xFF1D1135),
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -49,7 +49,7 @@ class AppTheme {
       surface: Color(0xFFFEF08A),
       tertiary: Colors.black,
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: const Color(0xFFFEF08A),
       elevation: 0,
       shape: RoundedRectangleBorder(

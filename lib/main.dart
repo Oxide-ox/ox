@@ -6,7 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:audio_service/audio_service.dart';
 import 'audio_handler.dart';    
 
-import 'login_page.dart';
+// Sembunyikan AppTheme dari file lain agar tidak bentrok
+import 'login_page.dart' hide AppTheme;
 import 'dashboard_page.dart';
 import 'home_page.dart';
 import 'seller_page.dart';
@@ -14,18 +15,22 @@ import 'admin_page.dart';
 import 'staff_page.dart';
 import 'dev_page.dart';
 import 'owner_page.dart';
-import 'landing.dart';
-import 'btrapps/.dart';
+import 'landing.dart' hide AppTheme;
+
+// Sumber utama AppTheme
 import 'app_theme.dart';
 
 import 'game/game_provider.dart';
 import 'game/game_screen.dart';
 
+// Catatan: Jika 'Api' berasal dari btrapps, sesuaikan nama filenya di sini
+import 'btrapps/api.dart'; 
+
 AudioHandler? globalAudioHandler;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Api.loadGh();
+  await Api.loadGh(); // Pastikan class Api sudah diimport jika digunakan
   await Firebase.initializeApp();
   
   runApp(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'nftoken_service.dart'; // import file service yang kamu buat
+import 'nftoken_service.dart';
 import 'app_theme.dart';
 
 class NfTokenPage extends StatefulWidget {
@@ -51,11 +51,12 @@ class _NfTokenPageState extends State<NfTokenPage> {
     }
   }
 
-  void _copyToClipboard(String text) {
+  void _copyToClipboard(String text, {String label = "Teks"}) {
+    if (text.isEmpty) return;
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text("Teks berhasil disalin!"),
+        content: Text("$label berhasil disalin!"),
         backgroundColor: Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
       ),
@@ -100,7 +101,13 @@ class _NfTokenPageState extends State<NfTokenPage> {
                 ),
                 boxShadow: _isNeo
                     ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(4, 4))]
-                    : null,
+                    : [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -143,6 +150,9 @@ class _NfTokenPageState extends State<NfTokenPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(_isNeo ? 6 : 12),
                   ),
+                  boxShadow: _isNeo
+                      ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(3, 3))]
+                      : null,
                 ),
                 onPressed: _isLoading ? null : _generateToken,
                 child: _isLoading
@@ -181,7 +191,7 @@ class _NfTokenPageState extends State<NfTokenPage> {
               ),
 
             // Hasil Generate
-            if (_result != null) ...[
+            if (_result != null && _result!.isSuccess) ...[
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -191,6 +201,9 @@ class _NfTokenPageState extends State<NfTokenPage> {
                     color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.4),
                     width: _isNeo ? 3 : 1,
                   ),
+                  boxShadow: _isNeo
+                      ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(4, 4))]
+                      : null,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,34 +212,144 @@ class _NfTokenPageState extends State<NfTokenPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          "RESULT",
+                          "RESULT DETAILS",
                           style: TextStyle(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.bold,
+                            fontSize: 14,
                           ),
                         ),
                         IconButton(
-                          icon: Icon(Icons.copy_rounded, color: theme.colorScheme.primary, size: 20),
-                          onPressed: () => _copyToClipboard(_result!.formatForCopy()),
+                          icon: Icon(Icons.copy_all_rounded, color: theme.colorScheme.primary, size: 22),
+                          tooltip: "Salin Semua",
+                          onPressed: () => _copyToClipboard(_result!.formatForCopy(), label: "Semua Detail Token"),
                         ),
                       ],
                     ),
-                    const Divider(),
-                    Text("Country: ${_result!.profile.country}", style: TextStyle(color: _textColor)),
-                    Text("Plan: ${_result!.profile.plan}", style: TextStyle(color: _textColor)),
-                    Text("Expired: ${_result!.expiry}", style: TextStyle(color: _textColor)),
-                    const SizedBox(height: 10),
-                    Text("PC Link:", style: TextStyle(color: _subTextColor, fontSize: 11)),
-                    SelectableText(_result!.links.pc, style: TextStyle(color: theme.colorScheme.primary, fontSize: 12)),
+                    Divider(color: _isNeo ? Colors.black : Colors.white10, thickness: _isNeo ? 2 : 1),
+                    const SizedBox(height: 6),
+
+                    _buildInfoRow("Country", _result!.profile.country),
+                    _buildInfoRow("Plan", _result!.profile.plan),
+                    _buildInfoRow("Expired", _result!.expiry),
+                    
+                    if (_result!.token != null && _result!.token!.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text("Token String:", style: TextStyle(color: _subTextColor, fontSize: 11)),
+                      const SizedBox(height: 2),
+                      SelectableText(
+                        _result!.token!,
+                        style: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 14),
+                    Text(
+                      "PLATFORM ACCESS LINKS",
+                      style: TextStyle(
+                        color: _textColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
                     const SizedBox(height: 8),
-                    Text("TV Link:", style: TextStyle(color: _subTextColor, fontSize: 11)),
-                    SelectableText(_result!.links.tv, style: TextStyle(color: theme.colorScheme.primary, fontSize: 12)),
+
+                    // PC Link
+                    _buildLinkItem(
+                      label: "PC Link",
+                      icon: Icons.computer_rounded,
+                      url: _result!.links.pc,
+                    ),
+                    const SizedBox(height: 8),
+
+                    // TV Link
+                    _buildLinkItem(
+                      label: "TV Link",
+                      icon: Icons.tv_rounded,
+                      url: _result!.links.tv,
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Android Link
+                    _buildLinkItem(
+                      label: "Android Link",
+                      icon: Icons.phone_android_rounded,
+                      url: _result!.links.android,
+                    ),
                   ],
                 ),
               ),
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: TextStyle(color: _subTextColor, fontSize: 12)),
+          Text(value, style: TextStyle(color: _textColor, fontWeight: FontWeight.bold, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLinkItem({
+    required String label,
+    required IconData icon,
+    required String url,
+  }) {
+    final theme = Theme.of(context);
+    final isHasUrl = url.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: theme.scaffoldBackgroundColor,
+        borderRadius: BorderRadius.circular(_isNeo ? 4 : 8),
+        border: Border.all(
+          color: _isNeo ? Colors.black : Colors.white12,
+          width: _isNeo ? 1.5 : 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(color: _subTextColor, fontSize: 10)),
+                SelectableText(
+                  isHasUrl ? url : "-",
+                  style: TextStyle(
+                    color: isHasUrl ? theme.colorScheme.primary : _subTextColor,
+                    fontSize: 11,
+                  ),
+                  maxLines: 1,
+                ),
+              ],
+            ),
+          ),
+          if (isHasUrl)
+            IconButton(
+              icon: const Icon(Icons.copy_rounded, size: 16),
+              color: theme.colorScheme.primary,
+              constraints: const BoxConstraints(),
+              padding: EdgeInsets.zero,
+              onPressed: () => _copyToClipboard(url, label: label),
+            ),
+        ],
       ),
     );
   }

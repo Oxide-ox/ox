@@ -16,7 +16,7 @@ class _CreatePaymentHtmlPageState extends State<CreatePaymentHtmlPage> {
   final _amountController = TextEditingController(text: "50000");
   final _qrisUrlController = TextEditingController(text: "https://smail.my.id/cloud/FHoXwjmX1");
   final _danaNumController = TextEditingController(text: "081234567890");
-  final _danaNameController = TextEditingController(text: "RAMADHIAN WAFI");
+  final _danaNameController = TextEditingController(text: "VIRZ OFFICIAL");
   final _bcaNumController = TextEditingController(text: "1234567890");
 
   int _selectedTemplateIndex = 0;

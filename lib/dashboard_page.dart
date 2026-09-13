@@ -447,6 +447,13 @@ class _DashboardPageState extends State<DashboardPage>
       } else if (index == 2) {
         _selectedPage = InfoPage(sessionKey: sessionKey);
       } else if (index == 3) {
+      // 🟢 TAMBAHKAN KONDISI VPS PANEL DI SINI
+      _selectedPage = VpsPanelPage(
+        username: username,
+        sessionKey: sessionKey,
+        role: role,
+      );
+    } else if (index == 4) {
         _selectedPage = ToolsPage(
           username: username,
           sessionKey: sessionKey,
@@ -1678,25 +1685,7 @@ class _DashboardPageState extends State<DashboardPage>
                   ],
                 ),
                 body: Stack(
-                  children: [
-                    Positioned(
-                      top: -60,
-                      right: -60,
-                      child: Container(
-                        width: 240,
-                        height: 240,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.colorScheme.primary.withOpacity(0.15),
-                              blurRadius: isNeo ? 0 : 100,
-                              spreadRadius: isNeo ? 0 : 30,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                  children: [                 
                     SafeArea(
                       child: FadeTransition(
                         opacity: _animation,
@@ -1738,6 +1727,10 @@ class _DashboardPageState extends State<DashboardPage>
                       BottomNavigationBarItem(
                         icon: Icon(Icons.notifications_none_rounded),
                         label: "Info",
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.dns_rounded),
+                        label: "VPS Panel",
                       ),
                       BottomNavigationBarItem(
                         icon: Icon(Icons.build_circle_outlined),

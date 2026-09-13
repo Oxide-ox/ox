@@ -140,19 +140,23 @@ class _NfTokenPageState extends State<NfTokenPage> {
             ),
             const SizedBox(height: 20),
 
-            // Tombol Generate
-            SizedBox(
+            // Tombol Generate dibungkus Container untuk mendukung boxShadow di Neo theme
+            Container(
               height: 50,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(_isNeo ? 6 : 12),
+                boxShadow: _isNeo
+                    ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(3, 3))]
+                    : null,
+              ),
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: theme.colorScheme.primary,
+                  elevation: _isNeo ? 0 : 2,
                   side: _isNeo ? const BorderSide(color: Colors.black, width: 2) : BorderSide.none,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(_isNeo ? 6 : 12),
                   ),
-                  boxShadow: _isNeo
-                      ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(3, 3))]
-                      : null,
                 ),
                 onPressed: _isLoading ? null : _generateToken,
                 child: _isLoading

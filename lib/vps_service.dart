@@ -26,6 +26,10 @@ class VpsNode {
 
 class VpsService {
   final String mainServerUrl; // Host utama tempat simpan list VPS
+  
+  
+  VpsService({String? mainServerUrl})
+    : mainServerUrl = mainServerUrl ?? baseUrl;
 
   VpsService({this.mainServerUrl = '$baseUrl'});
 

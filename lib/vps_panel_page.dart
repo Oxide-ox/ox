@@ -11,12 +11,14 @@ final baseUrl = Api.api;
 
 class VpsPanelPage extends StatefulWidget {
   final String username;
+  final String sessionKey;
   final String role;
   final String mainServerUrl;
 
   const VpsPanelPage({
     super.key,
     required this.username,
+    required this.sessionKey,
     required this.role,
     this.mainServerUrl = '$baseUrl',
   });

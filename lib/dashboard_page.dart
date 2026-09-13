@@ -13,6 +13,7 @@ import 'package:xxo25/app_theme.dart';
 import 'nik_check.dart';
 import 'staff_page.dart';
 import 'admin_page.dart';
+import 'vps_panel_page.dart';
 import 'owner_page.dart';
 import 'home_page.dart';
 import 'dev_page.dart';

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
 import 'btrapps/.dart';
+import 'app_theme.dart';
 
 final baseUrl = Api.api;
 final AudioPlayer _audioPlayer = AudioPlayer();
@@ -27,13 +28,12 @@ class _InfoPageState extends State<InfoPage> {
   String apiStatusText = "Checking...";
   Timer? _pingTimer;
 
-  static const Color bgDark = Color(0xFF090212);
-  static const Color bgDeepPurple = Color(0xFF140526);
-  static const Color neonMagenta = Color(0xFFE6007E);
-  static const Color neonPurple = Color(0xFF8E00C7);
-  static const Color cardDark = Color(0xFF120722);
-
   final Set<int> _expandedIndices = {};
+
+  bool get _isLight => Theme.of(context).brightness == Brightness.light;
+  Color get _textColor => _isLight ? Colors.black87 : Colors.white;
+  Color get _subTextColor => _isLight ? Colors.black54 : Colors.white70;
+  bool get _isNeo => themeModeNotifier.value != 0;
 
   @override
   void initState() {
@@ -113,7 +113,7 @@ class _InfoPageState extends State<InfoPage> {
       setState(() {
         isApiOnline = false;
         apiPingMs = 0;
-        apiStatusColor = neonMagenta;
+        apiStatusColor = Colors.redAccent;
         apiStatusText = "Offline";
       });
     }
@@ -121,17 +121,19 @@ class _InfoPageState extends State<InfoPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     if (isLoading) {
       return Scaffold(
-        backgroundColor: bgDark,
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
           automaticallyImplyLeading: false,
-          title: const Text("Info", style: TextStyle(color: Colors.white)),
+          title: Text("Info", style: TextStyle(color: _textColor)),
         ),
-        body: const Center(
-          child: CircularProgressIndicator(color: neonMagenta),
+        body: Center(
+          child: CircularProgressIndicator(color: theme.colorScheme.primary),
         ),
       );
     }
@@ -160,188 +162,180 @@ class _InfoPageState extends State<InfoPage> {
     ];
 
     return Scaffold(
-      backgroundColor: bgDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           "PERATURAN & INFO",
           style: TextStyle(
-            color: Colors.white,
-            fontFamily: 'Orbitron',
+            color: _textColor,
             fontWeight: FontWeight.bold,
             letterSpacing: 1.5,
-            shadows: [
-              Shadow(color: neonMagenta, blurRadius: 10),
-            ],
           ),
         ),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [bgDark, bgDeepPurple, bgDark],
-          ),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildCompactApiStatus(),
-              const SizedBox(height: 20),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildCompactApiStatus(),
+            const SizedBox(height: 20),
 
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: neonMagenta.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: neonMagenta.withOpacity(0.5)),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _isNeo ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(_isNeo ? 4 : 8),
+                    border: Border.all(
+                      color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.5),
+                      width: _isNeo ? 1.5 : 1.0,
                     ),
-                    child: const Icon(Icons.gavel, color: neonMagenta, size: 20),
                   ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    "PERATURAN PENGGUNA",
+                  child: Icon(
+                    Icons.gavel,
+                    color: _isNeo ? Colors.black : theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  "PERATURAN PENGGUNA",
+                  style: TextStyle(
+                    color: _textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            ...rulesList.asMap().entries.map((entry) {
+              int index = entry.key + 1;
+              Map<String, String> rule = entry.value;
+              return _buildCollapsibleRule(index, rule);
+            }).toList(),
+
+            const SizedBox(height: 24),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
+                border: Border.all(
+                  color: _isNeo ? Colors.black : theme.colorScheme.primary,
+                  width: _isNeo ? 3 : 1.5,
+                ),
+                boxShadow: _isNeo
+                    ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(5, 5))]
+                    : [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withOpacity(0.2),
+                          blurRadius: 15,
+                          spreadRadius: 1,
+                        ),
+                      ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: _isNeo ? Colors.redAccent : theme.colorScheme.primary,
+                        size: 28,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        "SANKSI",
+                        style: TextStyle(
+                          color: _isNeo ? Colors.redAccent : theme.colorScheme.primary,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "Jika pengguna terbukti melanggar salah satu peraturan di atas:",
+                    style: TextStyle(color: _subTextColor, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Akun akan DIHAPUS secara permanen 🚫",
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
+                      color: _textColor,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      fontFamily: 'Orbitron',
-                      letterSpacing: 1,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Tanpa pengembalian akun, saldo, atau kompensasi apa pun ‼️",
+                    style: TextStyle(
+                      color: _isNeo ? Colors.redAccent : theme.colorScheme.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
+            ),
 
-              const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
-              ...rulesList.asMap().entries.map((entry) {
-                int index = entry.key + 1;
-                Map<String, String> rule = entry.value;
-                return _buildCollapsibleRule(index, rule);
-              }).toList(),
-
-              const SizedBox(height: 24),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [bgDeepPurple, cardDark],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            Center(
+              child: Column(
+                children: [
+                  Icon(Icons.shield_moon_rounded, color: theme.colorScheme.primary, size: 30),
+                  const SizedBox(height: 12),
+                  Text(
+                    "Peraturan ini dibuat untuk menjaga keamanan, kenyamanan, dan kestabilan ekosistem Prikitiww App. Dengan menggunakan aplikasi ini, pengguna dianggap telah menyetujui seluruh peraturan di atas.",
+                    style: TextStyle(
+                      color: _subTextColor,
+                      fontSize: 11,
+                      fontStyle: FontStyle.italic,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: neonMagenta, width: 1.5),
-                  boxShadow: [
-                    BoxShadow(
-                      color: neonMagenta.withOpacity(0.3),
-                      blurRadius: 15,
-                      spreadRadius: 1,
+                  const SizedBox(height: 10),
+                  Container(
+                    height: 3,
+                    width: 80,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: const [
-                        Icon(Icons.warning_amber_rounded, color: neonMagenta, size: 28),
-                        SizedBox(width: 10),
-                        Text(
-                          "SANKSI",
-                          style: TextStyle(
-                            color: neonMagenta,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w900,
-                            fontFamily: 'Orbitron',
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Jika pengguna terbukti melanggar salah satu peraturan di atas:",
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      "Akun akan DIHAPUS secara permanen 🚫",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      "Tanpa pengembalian akun, saldo, atau kompensasi apa pun ‼️",
-                      style: TextStyle(
-                        color: neonMagenta,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
               ),
-
-              const SizedBox(height: 24),
-
-              Center(
-                child: Column(
-                  children: [
-                    const Icon(Icons.shield_moon_rounded, color: neonMagenta, size: 30),
-                    const SizedBox(height: 12),
-                    const Text(
-                      "Peraturan ini dibuat untuk menjaga keamanan, kenyamanan, dan kestabilan ekosistem Prikitiww App. Dengan menggunakan aplikasi ini, pengguna dianggap telah menyetujui seluruh peraturan di atas.",
-                      style: TextStyle(
-                        color: Colors.white54,
-                        fontSize: 11,
-                        fontStyle: FontStyle.italic,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 10),
-                    Container(
-                      height: 3,
-                      width: 80,
-                      decoration: BoxDecoration(
-                        color: neonMagenta,
-                        borderRadius: BorderRadius.circular(2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: neonMagenta.withOpacity(0.8),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildCollapsibleRule(int index, Map<String, String> rule) {
+    final theme = Theme.of(context);
     final bool isExpanded = _expandedIndices.contains(index);
 
     return Padding(
@@ -350,23 +344,29 @@ class _InfoPageState extends State<InfoPage> {
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,
         decoration: BoxDecoration(
-          color: cardDark.withOpacity(0.85),
-          borderRadius: BorderRadius.circular(16),
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(_isNeo ? 8 : 16),
           border: Border.all(
-            color: isExpanded ? neonMagenta : neonPurple.withOpacity(0.4),
-            width: isExpanded ? 1.5 : 1,
+            color: _isNeo
+                ? Colors.black
+                : (isExpanded ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.3)),
+            width: _isNeo ? 2.5 : (isExpanded ? 1.5 : 1.0),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: isExpanded ? neonMagenta.withOpacity(0.25) : neonPurple.withOpacity(0.1),
-              blurRadius: isExpanded ? 10 : 4,
-            ),
-          ],
+          boxShadow: _isNeo
+              ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(4, 4))]
+              : [
+                  BoxShadow(
+                    color: isExpanded
+                        ? theme.colorScheme.primary.withOpacity(0.2)
+                        : Colors.transparent,
+                    blurRadius: isExpanded ? 10 : 4,
+                  ),
+                ],
         ),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(_isNeo ? 8 : 16),
             onTap: () {
               setState(() {
                 if (isExpanded) {
@@ -386,17 +386,19 @@ class _InfoPageState extends State<InfoPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: neonMagenta.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: neonMagenta.withOpacity(0.5)),
+                          color: _isNeo ? theme.colorScheme.primary : theme.colorScheme.primary.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(_isNeo ? 3 : 8),
+                          border: Border.all(
+                            color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.5),
+                            width: _isNeo ? 1.5 : 1.0,
+                          ),
                         ),
                         child: Text(
                           "Rule $index",
-                          style: const TextStyle(
-                            color: neonMagenta,
+                          style: TextStyle(
+                            color: _isNeo ? Colors.black : theme.colorScheme.primary,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'Orbitron',
                           ),
                         ),
                       ),
@@ -404,8 +406,8 @@ class _InfoPageState extends State<InfoPage> {
                       Expanded(
                         child: Text(
                           rule['title']!,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: _textColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
                           ),
@@ -413,19 +415,22 @@ class _InfoPageState extends State<InfoPage> {
                       ),
                       Icon(
                         isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                        color: neonMagenta,
+                        color: theme.colorScheme.primary,
                         size: 24,
                       ),
                     ],
                   ),
                   if (isExpanded) ...[
                     const SizedBox(height: 10),
-                    Divider(color: neonPurple.withOpacity(0.4), height: 1),
+                    Divider(
+                      color: _isNeo ? Colors.black : Colors.white10,
+                      thickness: _isNeo ? 1.5 : 1,
+                    ),
                     const SizedBox(height: 10),
                     Text(
                       rule['desc']!,
-                      style: const TextStyle(
-                        color: Colors.white70,
+                      style: TextStyle(
+                        color: _subTextColor,
                         fontSize: 13,
                         height: 1.4,
                       ),
@@ -441,18 +446,25 @@ class _InfoPageState extends State<InfoPage> {
   }
 
   Widget _buildCompactApiStatus() {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: cardDark.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: neonPurple.withOpacity(0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: neonMagenta.withOpacity(0.15),
-            blurRadius: 8,
-          ),
-        ],
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(_isNeo ? 6 : 12),
+        border: Border.all(
+          color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+          width: _isNeo ? 2 : 1,
+        ),
+        boxShadow: _isNeo
+            ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(3, 3))]
+            : [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  blurRadius: 8,
+                ),
+              ],
       ),
       child: Row(
         children: [
@@ -468,10 +480,10 @@ class _InfoPageState extends State<InfoPage> {
           const SizedBox(width: 12),
           Text(
             "System Status: ${apiStatusText.toUpperCase()}",
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: _subTextColor,
               fontSize: 12,
-              fontFamily: 'ShareTechMono',
+              fontFamily: 'monospace',
             ),
           ),
         ],

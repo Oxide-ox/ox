@@ -7,11 +7,13 @@ final baseUrl = Api.api;
 
 class VpsManagePage extends StatefulWidget {
   final String userRole;
+  final String sessionKey;
   final String mainServerUrl;
 
   const VpsManagePage({
     super.key,
     required this.userRole,
+    required this.sessionKey,
     this.mainServerUrl = '$baseUrl',
   });
 

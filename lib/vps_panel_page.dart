@@ -13,14 +13,12 @@ class VpsPanelPage extends StatefulWidget {
   final String username;
   final String sessionKey;
   final String role;
-  final String mainServerUrl;
 
   const VpsPanelPage({
     super.key,
     required this.username,
     required this.sessionKey,
     required this.role,
-    this.mainServerUrl = '$baseUrl',
   });
 
   @override
@@ -45,7 +43,7 @@ class _VpsPanelPageState extends State<VpsPanelPage> {
   @override
   void initState() {
     super.initState();
-    _vpsService = VpsService(mainServerUrl: widget.mainServerUrl);
+    _vpsService = VpsService();
     
     // SETUP VIDEO BACKGROUND
     _videoController = VideoPlayerController.networkUrl(
@@ -84,7 +82,9 @@ class _VpsPanelPageState extends State<VpsPanelPage> {
   Future<void> _fetchStatus() async {
     if (_selectedServer == null) return;
     try {
-      final res = await http.get(Uri.parse('${_selectedServer!.fullUrl}/air/status/${widget.username}'));
+      final res = await http.get(
+        Uri.parse('${_selectedServer!.fullUrl}/air/status/${widget.username}'),
+      );
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (mounted) {
@@ -179,8 +179,21 @@ class _VpsPanelPageState extends State<VpsPanelPage> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('VPS NAT PANEL', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
-                          Text('User: ${widget.username}', style: const TextStyle(color: Colors.cyanAccent, fontSize: 13)),
+                          const Text(
+                            'VPS NAT PANEL',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                            ),
+                          ),
+                          Text(
+                            'User: ${widget.username}',
+                            style: const TextStyle(
+                              color: Colors.cyanAccent,
+                              fontSize: 13,
+                            ),
+                          ),
                         ],
                       ),
                       Row(
@@ -192,7 +205,11 @@ class _VpsPanelPageState extends State<VpsPanelPage> {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => VpsManagePage(userRole: widget.role, mainServerUrl: widget.mainServerUrl),
+                                    builder: (_) => VpsManagePage(
+                                      username: widget.username,
+                                      role: widget.role,
+                                      sessionKey: widget.sessionKey,
+                                    ),
                                   ),
                                 ).then((_) => _loadVpsServers());
                               },
@@ -200,13 +217,21 @@ class _VpsPanelPageState extends State<VpsPanelPage> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: isRunning ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2),
+                              color: isRunning
+                                  ? Colors.green.withOpacity(0.2)
+                                  : Colors.red.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: isRunning ? Colors.greenAccent : Colors.redAccent),
+                              border: Border.all(
+                                color: isRunning ? Colors.greenAccent : Colors.redAccent,
+                              ),
                             ),
                             child: Text(
                               _status.toUpperCase(),
-                              style: TextStyle(color: isRunning ? Colors.greenAccent : Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 11),
+                              style: TextStyle(
+                                color: isRunning ? Colors.greenAccent : Colors.redAccent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
+                              ),
                             ),
                           ),
                         ],
@@ -233,7 +258,7 @@ class _VpsPanelPageState extends State<VpsPanelPage> {
                         items: _vpsServers.map((server) {
                           return DropdownMenuItem<VpsNode>(
                             value: server,
-                            child: Text("${server.name}", style: const TextStyle(color: Colors.white)),
+                            child: Text(server.name, style: const TextStyle(color: Colors.white)),
                           );
                         }).toList(),
                         onChanged: (newServer) {
@@ -247,9 +272,19 @@ class _VpsPanelPageState extends State<VpsPanelPage> {
                   // RESOURCE METRICS (CPU & RAM)
                   Row(
                     children: [
-                      _buildMetricCard('CPU USAGE', '$_cpu %', (double.tryParse(_cpu) ?? 0) / 100, Colors.cyanAccent),
+                      _buildMetricCard(
+                        'CPU USAGE',
+                        '$_cpu %',
+                        (double.tryParse(_cpu) ?? 0) / 100,
+                        Colors.cyanAccent,
+                      ),
                       const SizedBox(width: 12),
-                      _buildMetricCard('RAM USAGE', '$_ram MB', ((double.tryParse(_ram) ?? 0) / 250).clamp(0.0, 1.0), Colors.purpleAccent),
+                      _buildMetricCard(
+                        'RAM USAGE',
+                        '$_ram MB',
+                        ((double.tryParse(_ram) ?? 0) / 250).clamp(0.0, 1.0),
+                        Colors.purpleAccent,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -259,8 +294,21 @@ class _VpsPanelPageState extends State<VpsPanelPage> {
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent, foregroundColor: Colors.black, padding: const EdgeInsets.symmetric(vertical: 12)),
-                          icon: _isLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black)) : const Icon(Icons.play_arrow),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.greenAccent,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          icon: _isLoading
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.black,
+                                  ),
+                                )
+                              : const Icon(Icons.play_arrow),
                           label: const Text('START', style: TextStyle(fontWeight: FontWeight.bold)),
                           onPressed: _isLoading ? null : _actionStart,
                         ),
@@ -268,7 +316,11 @@ class _VpsPanelPageState extends State<VpsPanelPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
                           icon: const Icon(Icons.stop),
                           label: const Text('STOP', style: TextStyle(fontWeight: FontWeight.bold)),
                           onPressed: _isLoading ? null : _actionStop,
@@ -279,7 +331,10 @@ class _VpsPanelPageState extends State<VpsPanelPage> {
                   const SizedBox(height: 16),
 
                   // LIVE CONSOLE LOGS
-                  const Text('Console Log Console', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                  const Text(
+                    'Console Log Console',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
                   const SizedBox(height: 6),
                   Expanded(
                     child: Container(
@@ -291,16 +346,27 @@ class _VpsPanelPageState extends State<VpsPanelPage> {
                         border: Border.all(color: Colors.white12),
                       ),
                       child: _logs.isEmpty
-                          ? const Center(child: Text('Belum ada log aktif.', style: TextStyle(color: Colors.grey, fontSize: 12)))
+                          ? const Center(
+                              child: Text(
+                                'Belum ada log aktif.',
+                                style: TextStyle(color: Colors.grey, fontSize: 12),
+                              ),
+                            )
                           : ListView.builder(
                               reverse: true,
                               itemCount: _logs.length,
                               itemBuilder: (context, i) {
                                 String log = _logs[_logs.length - 1 - i];
-                                Color color = log.startsWith('[ERR]') ? Colors.redAccent : Colors.greenAccent;
+                                Color color = log.startsWith('[ERR]')
+                                    ? Colors.redAccent
+                                    : Colors.greenAccent;
                                 return Text(
                                   log,
-                                  style: TextStyle(color: color, fontFamily: 'monospace', fontSize: 11),
+                                  style: TextStyle(
+                                    color: color,
+                                    fontFamily: 'monospace',
+                                    fontSize: 11,
+                                  ),
                                 );
                               },
                             ),
@@ -327,11 +393,29 @@ class _VpsPanelPageState extends State<VpsPanelPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11, fontWeight: FontWeight.bold)),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.grey,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+            Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 6),
-            LinearProgressIndicator(value: progress.clamp(0.0, 1.0), color: color, backgroundColor: Colors.white12),
+            LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0),
+              color: color,
+              backgroundColor: Colors.white12,
+            ),
           ],
         ),
       ),

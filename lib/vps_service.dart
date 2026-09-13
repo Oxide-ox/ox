@@ -10,14 +10,21 @@ class VpsNode {
   final String host;
   final int port;
 
-  VpsNode({required this.id, required this.name, required this.host, required this.port});
+  VpsNode({
+    required this.id,
+    required this.name,
+    required this.host,
+    required this.port,
+  });
 
   factory VpsNode.fromJson(Map<String, dynamic> json) {
     return VpsNode(
-      id: json['id'],
-      name: json['name'],
-      host: json['host'],
-      port: json['port'] is int ? json['port'] : int.parse(json['port'].toString()),
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      host: json['host']?.toString() ?? '',
+      port: json['port'] is int
+          ? json['port']
+          : int.tryParse(json['port'].toString()) ?? 80,
     );
   }
 
@@ -25,18 +32,12 @@ class VpsNode {
 }
 
 class VpsService {
-  final String mainServerUrl; // Host utama tempat simpan list VPS
-  
-  
-  VpsService({String? mainServerUrl})
-    : mainServerUrl = mainServerUrl ?? baseUrl;
-
-  VpsService({this.mainServerUrl = '$baseUrl'});
+  VpsService();
 
   // Ambil daftar VPS (/air/vps/list)
   Future<List<VpsNode>> fetchVpsList() async {
     try {
-      final res = await http.get(Uri.parse('$mainServerUrl/air/vps/list'));
+      final res = await http.get(Uri.parse('$baseUrl/air/vps/list'));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         List list = data['data'] ?? [];
@@ -50,7 +51,7 @@ class VpsService {
   Future<bool> addVps(String role, String name, String host, int port) async {
     try {
       final res = await http.post(
-        Uri.parse('$mainServerUrl/air/vps/add'),
+        Uri.parse('$baseUrl/air/vps/add'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'role': role, 'name': name, 'host': host, 'port': port}),
       );
@@ -64,7 +65,7 @@ class VpsService {
   Future<bool> deleteVps(String role, String id) async {
     try {
       final res = await http.delete(
-        Uri.parse('$mainServerUrl/air/vps/delete/$id'),
+        Uri.parse('$baseUrl/air/vps/delete/$id'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'role': role}),
       );

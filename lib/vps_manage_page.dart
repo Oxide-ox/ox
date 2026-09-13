@@ -4,17 +4,16 @@ import 'btrapps/.dart';
 
 final baseUrl = Api.api;
 
-
 class VpsManagePage extends StatefulWidget {
-  final String userRole;
+  final String username;
+  final String role;
   final String sessionKey;
-  final String mainServerUrl;
 
   const VpsManagePage({
     super.key,
-    required this.userRole,
+    required this.username,
+    required this.role,
     required this.sessionKey,
-    this.mainServerUrl = '$baseUrl',
   });
 
   @override
@@ -29,7 +28,7 @@ class _VpsManagePageState extends State<VpsManagePage> {
   @override
   void initState() {
     super.initState();
-    _vpsService = VpsService(mainServerUrl: widget.mainServerUrl);
+    _vpsService = VpsService();
     _loadVps();
   }
 
@@ -58,27 +57,44 @@ class _VpsManagePageState extends State<VpsManagePage> {
             TextField(
               controller: nameCtrl,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: 'Nama Server (ex: SG-Node1)', labelStyle: TextStyle(color: Colors.grey)),
+              decoration: const InputDecoration(
+                labelText: 'Nama Server (ex: SG-Node1)',
+                labelStyle: TextStyle(color: Colors.grey),
+              ),
             ),
             TextField(
               controller: hostCtrl,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: 'Host / IP (ex: http://103.x.x.x)', labelStyle: TextStyle(color: Colors.grey)),
+              decoration: const InputDecoration(
+                labelText: 'Host / IP (ex: http://103.x.x.x)',
+                labelStyle: TextStyle(color: Colors.grey),
+              ),
             ),
             TextField(
               controller: portCtrl,
               keyboardType: TextInputType.number,
               style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(labelText: 'Port API', labelStyle: TextStyle(color: Colors.grey)),
+              decoration: const InputDecoration(
+                labelText: 'Port API',
+                labelStyle: TextStyle(color: Colors.grey),
+              ),
             ),
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
             onPressed: () async {
               if (nameCtrl.text.isNotEmpty && hostCtrl.text.isNotEmpty) {
-                await _vpsService.addVps(widget.userRole, nameCtrl.text, hostCtrl.text, int.parse(portCtrl.text));
+                await _vpsService.addVps(
+                  widget.role,
+                  nameCtrl.text,
+                  hostCtrl.text,
+                  int.parse(portCtrl.text),
+                );
                 Navigator.pop(ctx);
                 _loadVps();
               }
@@ -92,11 +108,14 @@ class _VpsManagePageState extends State<VpsManagePage> {
 
   @override
   Widget build(BuildContext context) {
-    bool isDev = widget.userRole == 'developer';
+    bool isDev = widget.role == 'developer';
 
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F14),
-      appBar: AppBar(title: const Text('Manajemen List VPS'), backgroundColor: const Color(0xFF16161E)),
+      appBar: AppBar(
+        title: const Text('Manajemen List VPS'),
+        backgroundColor: const Color(0xFF16161E),
+      ),
       floatingActionButton: isDev
           ? FloatingActionButton.extended(
               onPressed: _showAddDialog,
@@ -117,13 +136,22 @@ class _VpsManagePageState extends State<VpsManagePage> {
                   color: const Color(0xFF1A1A24),
                   child: ListTile(
                     leading: const Icon(Icons.dns, color: Colors.cyanAccent),
-                    title: Text(vps.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    subtitle: Text(vps.fullUrl, style: const TextStyle(color: Colors.grey)),
+                    title: Text(
+                      vps.name,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(
+                      vps.fullUrl,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
                     trailing: isDev
                         ? IconButton(
                             icon: const Icon(Icons.delete, color: Colors.redAccent),
                             onPressed: () async {
-                              await _vpsService.deleteVps(widget.userRole, vps.id);
+                              await _vpsService.deleteVps(widget.role, vps.id);
                               _loadVps();
                             },
                           )

@@ -7,8 +7,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:video_player/video_player.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:xxo25/login_page.dart' hide AppTheme;
-import 'package:xxo25/app_theme.dart';
 
 import 'nik_check.dart';
 import 'staff_page.dart';
@@ -18,6 +16,7 @@ import 'owner_page.dart';
 import 'home_page.dart';
 import 'dev_page.dart';
 import 'seller_page.dart';
+import 'team_page.dart';
 import 'change_password_page.dart';
 import 'tools_gateway.dart';
 import 'login_page.dart' hide AppTheme;
@@ -31,6 +30,7 @@ import 'tq_to.dart';
 import 'anime_home.dart';
 import 'btrapps/.dart';
 import 'app_theme.dart';
+import 'theme_settings_sheet.dart';
 
 final baseUrl = Api.api;
 
@@ -43,6 +43,7 @@ class DashboardPage extends StatefulWidget {
   final String expiredDate;
   final String sessionKey;
   final List<Map<String, dynamic>> listBug;
+  final List<Map<String, dynamic>> listSpam;
   final List<Map<String, dynamic>> listDoos;
   final List<dynamic> news;
 
@@ -55,6 +56,7 @@ class DashboardPage extends StatefulWidget {
     required this.role,
     required this.expiredDate,
     required this.listBug,
+    required this.listSpam,
     required this.listDoos,
     required this.sessionKey,
     required this.news,
@@ -75,6 +77,7 @@ class _DashboardPageState extends State<DashboardPage>
   late String role;
   late String expiredDate;
   late List<Map<String, dynamic>> listBug;
+  late List<Map<String, dynamic>> listSpam;
   late List<Map<String, dynamic>> listDoos;
   late List<dynamic> newsList;
 
@@ -88,13 +91,18 @@ class _DashboardPageState extends State<DashboardPage>
 
   final PageController _newsPageController = PageController();
   int _currentNewsIndex = 0;
+
+  final PageController _quickActionPageController =
+      PageController(viewportFraction: 0.92);
+  int _currentQuickActionIndex = 0;
+
   final ImagePicker _picker = ImagePicker();
 
   List<dynamic> _backendStories = [];
   bool _isUploadingStory = false;
 
-  List<dynamic> _cnnNewsList = [];
-  bool _isLoadingCnnNews = true;
+  List<dynamic> _newsListFromApi = [];
+  bool _isLoadingNews = true;
 
   bool get _isLight => Theme.of(context).brightness == Brightness.light;
   Color get _textColor => _isLight ? Colors.black87 : Colors.white;
@@ -109,6 +117,7 @@ class _DashboardPageState extends State<DashboardPage>
     role = widget.role;
     expiredDate = widget.expiredDate;
     listBug = widget.listBug;
+    listSpam = widget.listSpam;
     listDoos = widget.listDoos;
     newsList = widget.news;
 
@@ -124,30 +133,40 @@ class _DashboardPageState extends State<DashboardPage>
     _initMenuVideo();
     _fetchDashboardStats();
     _fetchStoriesFromBackend();
-    _fetchCnnNews();
+    _fetchNews();
   }
 
-  Future<void> _fetchCnnNews() async {
+  Future<void> _fetchNews() async {
     try {
       final res = await http.get(
-        Uri.parse('https://api-berita-indonesia.vercel.app/cnn/terbaru/'),
+        Uri.parse('$baseUrl/api/news'),
       );
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
-        if (data['success'] == true && data['data'] != null) {
-          if (mounted) {
-            setState(() {
-              _cnnNewsList = data['data']['posts'] ?? [];
-              _isLoadingCnnNews = false;
-              _selectedPage = _buildMainDashboardContent();
-            });
-          }
+        List<dynamic> parsedList = [];
+        if (data is List) {
+          parsedList = data;
+        } else if (data is Map && data['data'] != null) {
+          parsedList = data['data'];
         }
+
+        if (mounted) {
+          setState(() {
+            _newsListFromApi = parsedList.where((item) {
+              final src = (item['source'] ?? '').toString().toLowerCase();
+              return !src.contains('cnn') && !src.contains('jtv');
+            }).toList();
+            _isLoadingNews = false;
+            _selectedPage = _buildMainDashboardContent();
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isLoadingNews = false);
       }
     } catch (e) {
-      debugPrint("Error fetch CNN News: $e");
+      debugPrint("Error fetch news: $e");
       if (mounted) {
-        setState(() => _isLoadingCnnNews = false);
+        setState(() => _isLoadingNews = false);
       }
     }
   }
@@ -212,7 +231,7 @@ class _DashboardPageState extends State<DashboardPage>
         final theme = Theme.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("$successCount Story berhasil dipublikasikan!"),
+            content: Text("$successCount Story berhasil dipublikasikan"),
             backgroundColor: theme.colorScheme.primary,
           ),
         );
@@ -284,7 +303,6 @@ class _DashboardPageState extends State<DashboardPage>
                     }),
                   ),
                   const SizedBox(height: 10),
-
                   Row(
                     children: [
                       Icon(Icons.history_toggle_off_rounded,
@@ -305,7 +323,6 @@ class _DashboardPageState extends State<DashboardPage>
                     ],
                   ),
                   const SizedBox(height: 8),
-
                   SizedBox(
                     height: 380,
                     child: PageView.builder(
@@ -324,7 +341,6 @@ class _DashboardPageState extends State<DashboardPage>
                       },
                     ),
                   ),
-
                   if (userStories.length > 1) ...[
                     const SizedBox(height: 10),
                     Row(
@@ -448,13 +464,12 @@ class _DashboardPageState extends State<DashboardPage>
       } else if (index == 2) {
         _selectedPage = InfoPage(sessionKey: sessionKey);
       } else if (index == 3) {
-      // 🟢 TAMBAHKAN KONDISI VPS PANEL DI SINI
-      _selectedPage = VpsPanelPage(
-        username: username,
-        sessionKey: sessionKey,
-        role: role,
-      );
-    } else if (index == 4) {
+        _selectedPage = VpsPanelPage(
+          username: username,
+          sessionKey: sessionKey,
+          role: role,
+        );
+      } else if (index == 4) {
         _selectedPage = ToolsPage(
           username: username,
           sessionKey: sessionKey,
@@ -476,6 +491,8 @@ class _DashboardPageState extends State<DashboardPage>
       } else if (index == 4) {
         _selectedPage = StaffPage(sessionKey: sessionKey, username: username);
       } else if (index == 5) {
+        _selectedPage = TeamPage(sessionKey: sessionKey, username: username);
+      } else if (index == 6) {
         _selectedPage = DevPage(sessionKey: sessionKey, username: username);
       }
     });
@@ -496,7 +513,7 @@ class _DashboardPageState extends State<DashboardPage>
           const SizedBox(height: 20),
           _buildHorizontalQuickActions(),
           const SizedBox(height: 20),
-          _buildCnnIndonesiaNewsCard(),
+          _buildKompasNewsCard(),
           const SizedBox(height: 20),
         ],
       ),
@@ -571,7 +588,6 @@ class _DashboardPageState extends State<DashboardPage>
               ),
             ),
           ),
-
           if (groupedStories.isEmpty)
             Center(
               child: Padding(
@@ -855,7 +871,7 @@ class _DashboardPageState extends State<DashboardPage>
                     children: [
                       Text(
                         username,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -916,9 +932,9 @@ class _DashboardPageState extends State<DashboardPage>
       children: [
         Icon(icon, color: theme.colorScheme.primary, size: 20),
         const SizedBox(height: 6),
-         Text(
+        Text(
           label,
-          style: TextStyle(color: Colors.white70, fontSize: 11),
+          style: const TextStyle(color: Colors.white70, fontSize: 11),
         ),
         const SizedBox(height: 2),
         Text(
@@ -940,9 +956,10 @@ class _DashboardPageState extends State<DashboardPage>
     final actions = [
       {
         "title": "Manage Sender",
-        "sub": "WA Sender Tools",
+        "sub": "Pairing & Configuration",
+        "badge": "SENDER WA",
         "icon": FontAwesomeIcons.whatsapp,
-        "color": isNeo ? theme.colorScheme.secondary : theme.colorScheme.primary,
+        "color": isNeo ? theme.colorScheme.secondary : const Color(0xFFE6007E),
         "onTap": () {
           Navigator.push(
             context,
@@ -959,6 +976,7 @@ class _DashboardPageState extends State<DashboardPage>
       {
         "title": "Publik Chat",
         "sub": "Komunitas Global",
+        "badge": "GLOBAL CHAT",
         "icon": Icons.chat_bubble_outline_rounded,
         "color": theme.colorScheme.primary,
         "onTap": () {
@@ -976,13 +994,15 @@ class _DashboardPageState extends State<DashboardPage>
       {
         "title": "Channel Info",
         "sub": "Telegram Updates",
+        "badge": "TELEGRAM",
         "icon": FontAwesomeIcons.telegram,
         "color": isNeo ? theme.colorScheme.primary : const Color(0xFF0088CC),
         "onTap": () => _openUrl("https://t.me/AllinformationVirz"),
       },
       {
         "title": "Tq To Team",
-        "sub": "Credits & Credits",
+        "sub": "Credits & Respects",
+        "badge": "CREDITS",
         "icon": Icons.favorite_border_rounded,
         "color": Colors.pinkAccent,
         "onTap": () {
@@ -998,111 +1018,250 @@ class _DashboardPageState extends State<DashboardPage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Text(
-            "QUICK ACTIONS",
-            style: TextStyle(
-              color: _textColor,
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(isNeo ? 8 : 16),
+              border: Border.all(
+                color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.35),
+                width: isNeo ? 3.0 : 1.2,
+              ),
+              boxShadow: isNeo
+                  ? [
+                      const BoxShadow(
+                        color: Colors.black,
+                        blurRadius: 0,
+                        offset: Offset(4, 4),
+                      )
+                    ]
+                  : [
+                      BoxShadow(
+                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                    border: isNeo ? Border.all(color: Colors.black, width: 2) : null,
+                  ),
+                  child: Icon(
+                    Icons.bolt_rounded,
+                    color: _isLight ? Colors.black : Colors.white,
+                    size: 18,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "QUICK ACTIONS",
+                        style: TextStyle(
+                          color: _textColor,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      Text(
+                        "Beberapa Menu Tambahan",
+                        style: TextStyle(
+                          color: _subTextColor,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isNeo ? Colors.black : theme.colorScheme.primary,
+                      width: isNeo ? 1.5 : 1.0,
+                    ),
+                  ),
+                  child: Text(
+                    "OXIDE",
+                    style: TextStyle(
+                      color: isNeo ? Colors.black : theme.colorScheme.primary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        const SizedBox(height: 10),
+
+        const SizedBox(height: 14),
+
         SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+          height: 155,
+          child: PageView.builder(
+            controller: _quickActionPageController,
             itemCount: actions.length,
+            onPageChanged: (index) {
+              setState(() => _currentQuickActionIndex = index);
+            },
             itemBuilder: (context, index) {
               final item = actions[index];
+              final Color actionColor = item['color'] as Color;
+
               return Container(
-                width: 160,
-                margin: const EdgeInsets.only(right: 14),
+                margin: const EdgeInsets.symmetric(horizontal: 6),
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  borderRadius: BorderRadius.circular(isNeo ? 8 : 18),
+                  color: isNeo ? actionColor : theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(isNeo ? 10 : 20),
                   border: Border.all(
-                    color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.4),
-                    width: isNeo ? 3.0 : 1.5,
+                    color: isNeo ? Colors.black : actionColor.withOpacity(0.5),
+                    width: isNeo ? 3.5 : 1.5,
                   ),
                   boxShadow: isNeo
                       ? [
                           const BoxShadow(
                             color: Colors.black,
                             blurRadius: 0,
-                            offset: Offset(4, 4),
+                            offset: Offset(5, 5),
                           )
                         ]
                       : [
                           BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.15),
-                            blurRadius: 12,
-                            offset: const Offset(0, 5),
+                            color: actionColor.withOpacity(0.25),
+                            blurRadius: 15,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                 ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: item['onTap'] as VoidCallback,
-                    borderRadius: BorderRadius.circular(isNeo ? 8 : 18),
-                    child: Padding(
-                      padding: const EdgeInsets.all(14.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(9),
-                            decoration: BoxDecoration(
-                              color: isNeo ? (item['color'] as Color) : (item['color'] as Color).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(isNeo ? 4 : 12),
-                              border: isNeo ? Border.all(color: Colors.black, width: 1.5) : null,
-                            ),
-                            child: Icon(
-                              item['icon'] as IconData,
-                              color: isNeo ? Colors.black : item['color'] as Color,
-                              size: 22,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            item['title'] as String,
-                            style: TextStyle(
-                              color: _textColor,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            item['sub'] as String,
-                            style: TextStyle(
-                              color: _subTextColor,
-                              fontSize: 11,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(isNeo ? 7 : 18),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -15,
+                        bottom: -15,
+                        child: Icon(
+                          item['icon'] as IconData,
+                          size: 130,
+                          color: (isNeo ? Colors.black : actionColor).withOpacity(0.15),
+                        ),
                       ),
-                    ),
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: item['onTap'] as VoidCallback,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: isNeo ? Colors.white : actionColor.withOpacity(0.2),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: isNeo ? Colors.black : actionColor,
+                                          width: isNeo ? 2 : 1,
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        item['icon'] as IconData,
+                                        color: isNeo ? Colors.black : actionColor,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.white24, width: 1),
+                                      ),
+                                      child: Text(
+                                        item['badge'] as String,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Spacer(),
+                                Text(
+                                  item['title'] as String,
+                                  style: TextStyle(
+                                    color: isNeo ? Colors.black : Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  item['sub'] as String,
+                                  style: TextStyle(
+                                    color: isNeo ? Colors.black87 : Colors.white70,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );
             },
           ),
         ),
+
+        const SizedBox(height: 10),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            actions.length,
+            (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              height: 6,
+              width: _currentQuickActionIndex == index ? 22 : 6,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: _currentQuickActionIndex == index
+                    ? theme.colorScheme.primary
+                    : (_isLight ? Colors.black26 : Colors.white24),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildCnnIndonesiaNewsCard() {
+  Widget _buildKompasNewsCard() {
     final theme = Theme.of(context);
     final isNeo = themeModeNotifier.value != 0;
 
@@ -1141,13 +1300,13 @@ class _DashboardPageState extends State<DashboardPage>
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: isNeo ? theme.colorScheme.primary : Colors.red.withOpacity(0.2),
+                    color: isNeo ? theme.colorScheme.primary : Colors.blue.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(isNeo ? 4 : 8),
                     border: isNeo ? Border.all(color: Colors.black, width: 1.5) : null,
                   ),
                   child: Icon(
                     Icons.newspaper_rounded,
-                    color: isNeo ? Colors.black : Colors.redAccent,
+                    color: isNeo ? Colors.black : Colors.blueAccent,
                     size: 18,
                   ),
                 ),
@@ -1165,7 +1324,7 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       Text(
-                        "CNN Indonesia • Auto Update",
+                        "Kompas.com • Auto Update",
                         style: TextStyle(
                           color: _subTextColor,
                           fontSize: 10,
@@ -1181,8 +1340,8 @@ class _DashboardPageState extends State<DashboardPage>
                     size: 18,
                   ),
                   onPressed: () {
-                    setState(() => _isLoadingCnnNews = true);
-                    _fetchCnnNews();
+                    setState(() => _isLoadingNews = true);
+                    _fetchNews();
                   },
                 ),
               ],
@@ -1193,8 +1352,7 @@ class _DashboardPageState extends State<DashboardPage>
               thickness: isNeo ? 2 : 1,
             ),
             const SizedBox(height: 12),
-
-            if (_isLoadingCnnNews)
+            if (_isLoadingNews)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24),
                 child: Center(
@@ -1204,11 +1362,11 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                 ),
               )
-            else if (_cnnNewsList.isEmpty)
+            else if (_newsListFromApi.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Text(
-                  "Gagal memuat berita CNN Indonesia.",
+                  "Gagal memuat berita.",
                   style: TextStyle(color: _subTextColor, fontSize: 12),
                 ),
               )
@@ -1216,108 +1374,77 @@ class _DashboardPageState extends State<DashboardPage>
               ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: _cnnNewsList.length > 4 ? 4 : _cnnNewsList.length,
+                itemCount: _newsListFromApi.length > 5 ? 5 : _newsListFromApi.length,
                 separatorBuilder: (_, __) => Divider(
                   color: isNeo ? Colors.black54 : Colors.white10,
                   height: 16,
                   thickness: isNeo ? 1.5 : 1.0,
                 ),
                 itemBuilder: (context, idx) {
-                  final newsItem = _cnnNewsList[idx];
-                  final String title = newsItem['title'] ?? 'Tanpa Judul';
-                  final String image = newsItem['image']['small'] ??
-                      newsItem['image']['large'] ??
-                      '';
-                  final String link = newsItem['link'] ?? '';
-                  final String pubDate = newsItem['pubDate'] ?? '';
+                  final newsItem = _newsListFromApi[idx];
+                  final String title = newsItem['headline'] ?? newsItem['title'] ?? 'Tanpa Judul';
+                  final String sourceName = newsItem['source'] ?? 'Kompas.com';
+                  final String link = newsItem['url'] ?? newsItem['link'] ?? '';
+                  final String pubDate = newsItem['timestamp'] ?? newsItem['pubDate'] ?? '';
 
                   return InkWell(
                     onTap: () {
                       if (link.isNotEmpty) _openUrl(link);
                     },
                     borderRadius: BorderRadius.circular(10),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(isNeo ? 4 : 8),
-                          child: image.isNotEmpty
-                              ? Image.network(
-                                  image,
-                                  width: 65,
-                                  height: 65,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    width: 65,
-                                    height: 65,
-                                    color: theme.colorScheme.surface,
-                                    child: const Icon(Icons.image_not_supported,
-                                        color: Colors.white38, size: 24),
-                                  ),
-                                )
-                              : Container(
-                                  width: 65,
-                                  height: 65,
-                                  color: theme.colorScheme.surface,
-                                  child: const Icon(Icons.article,
-                                      color: Colors.white38, size: 24),
-                                ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              color: _textColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              height: 1.3,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
                             children: [
-                              Text(
-                                title,
-                                style: TextStyle(
-                                  color: _textColor,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  height: 1.3,
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: isNeo ? theme.colorScheme.primary : Colors.blue.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(isNeo ? 2 : 4),
+                                  border: isNeo ? Border.all(color: Colors.black, width: 1) : null,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: isNeo ? theme.colorScheme.primary : Colors.red.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(isNeo ? 2 : 4),
-                                      border: isNeo ? Border.all(color: Colors.black, width: 1) : null,
-                                    ),
-                                    child: Text(
-                                      "CNN Indonesia",
-                                      style: TextStyle(
-                                        color: isNeo ? Colors.black : Colors.redAccent,
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                child: Text(
+                                  sourceName,
+                                  style: TextStyle(
+                                    color: isNeo ? Colors.black : Colors.blueAccent,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  const SizedBox(width: 8),
-                                  if (pubDate.isNotEmpty)
-                                    Expanded(
-                                      child: Text(
-                                        pubDate.split("T").first,
-                                        style: TextStyle(
-                                          color: _subTextColor,
-                                          fontSize: 10,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                ],
+                                ),
                               ),
+                              const SizedBox(width: 8),
+                              if (pubDate.isNotEmpty)
+                                Expanded(
+                                  child: Text(
+                                    pubDate.contains("T") ? pubDate.split("T").first : pubDate,
+                                    style: TextStyle(
+                                      color: _subTextColor,
+                                      fontSize: 10,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                             ],
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -1400,9 +1527,9 @@ class _DashboardPageState extends State<DashboardPage>
                           ),
                         ),
                         const SizedBox(height: 10),
-                         Text(
+                        Text(
                           username,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -1470,11 +1597,17 @@ class _DashboardPageState extends State<DashboardPage>
                     label: "staff Page",
                     onTap: () => _onSidebarTabSelected(4),
                   ),
+                if (role == "team")
+                  _buildDrawerMenuItem(
+                    icon: Icons.workspace_premium_rounded,
+                    label: "team project Page",
+                    onTap: () => _onSidebarTabSelected(5),
+                  ),
                 if (role == "developer")
                   _buildDrawerMenuItem(
                     icon: Icons.workspace_premium_rounded,
                     label: "developer Page",
-                    onTap: () => _onSidebarTabSelected(5),
+                    onTap: () => _onSidebarTabSelected(6),
                   ),
                 _buildDrawerMenuItem(
                   icon: Icons.history_rounded,
@@ -1572,15 +1705,7 @@ class _DashboardPageState extends State<DashboardPage>
     return ValueListenableBuilder<int>(
       valueListenable: themeModeNotifier,
       builder: (context, modeIndex, child) {
-        ThemeData currentTheme;
-        if (modeIndex == 1) {
-          currentTheme = AppTheme.neoDarkNeon;
-        } else if (modeIndex == 2) {
-          currentTheme = AppTheme.neoCreamPastel;
-        } else {
-          currentTheme = AppTheme.classic;
-        }
-
+        final currentTheme = AppTheme.currentTheme;
         final isNeo = modeIndex != 0;
 
         return Theme(
@@ -1588,15 +1713,6 @@ class _DashboardPageState extends State<DashboardPage>
           child: Builder(
             builder: (context) {
               final theme = Theme.of(context);
-
-              IconData themeIcon;
-              if (modeIndex == 0) {
-                themeIcon = Icons.palette_outlined;
-              } else if (modeIndex == 1) {
-                themeIcon = Icons.bolt_rounded;
-              } else {
-                themeIcon = Icons.wb_sunny_rounded;
-              }
 
               return Scaffold(
                 backgroundColor: theme.scaffoldBackgroundColor,
@@ -1634,13 +1750,13 @@ class _DashboardPageState extends State<DashboardPage>
                   actions: [
                     IconButton(
                       icon: Icon(
-                        themeIcon,
+                        Icons.palette_outlined,
                         color: theme.colorScheme.primary,
                         size: 24,
                       ),
-                      tooltip: "Ganti Tema",
+                      tooltip: "Pengaturan Tema",
                       onPressed: () {
-                        themeModeNotifier.value = (themeModeNotifier.value + 1) % 3;
+                        ThemeSettingsSheet.show(context);
                       },
                     ),
                     GestureDetector(
@@ -1686,7 +1802,7 @@ class _DashboardPageState extends State<DashboardPage>
                   ],
                 ),
                 body: Stack(
-                  children: [                 
+                  children: [
                     SafeArea(
                       child: FadeTransition(
                         opacity: _animation,
@@ -1753,6 +1869,7 @@ class _DashboardPageState extends State<DashboardPage>
     _controller.dispose();
     _menuVideoController?.dispose();
     _newsPageController.dispose();
+    _quickActionPageController.dispose();
     super.dispose();
   }
 }

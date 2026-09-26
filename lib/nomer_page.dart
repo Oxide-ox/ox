@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 import 'btrapps/.dart';
+import 'app_theme.dart';
 
 final baseUrl = Api.api;
 
@@ -35,39 +36,18 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
   late AnimationController _pulseController;
 
   Set<String> selectedBugIds = {};
-  String _selectedSenderType = "private";
 
   bool _isSending = false;
   String? _responseMessage;
-
-  final Color bgDark = const Color(0xFF0A0A0C);
-  final Color cardGlass = const Color(0xFF16161A);
-  final Color neonPink = const Color(0xFFFF007F);
-  final Color neonCyan = const Color(0xFF00F5FF);
-  final Color laserPurple = const Color(0xFF7B00FF);
-  final Color primaryWhite = const Color(0xFFF5F5F7);
-  final Color textGrey = Colors.white54;
-  final Color borderGlass = Colors.white.withOpacity(0.08);
-
-  final LinearGradient cyberpunkGradient = const LinearGradient(
-    colors: [Color(0xFFFF007F), Color(0xFF7B00FF)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-  );
 
   late VideoPlayerController _videoController;
   late ChewieController _chewieController;
   bool _isVideoInitialized = false;
 
-  bool get _isAllowedToUseGlobal {
-    final cleanRole = widget.role.toLowerCase().trim();
-    return cleanRole == "staff" ||
-        cleanRole == "owner" ||
-        cleanRole == "admin" ||
-        cleanRole == "developer" ||
-        cleanRole == "reseller" ||
-        cleanRole == "vip";
-  }
+  bool get _isLight => Theme.of(context).brightness == Brightness.light;
+  Color get _textColor => _isLight ? Colors.black87 : Colors.white;
+  Color get _subTextColor => _isLight ? Colors.black54 : Colors.white70;
+  bool get _isNeo => themeModeNotifier.value != 0;
 
   @override
   void initState() {
@@ -123,28 +103,32 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
   }
 
   void _showBugSelectionPopup() {
+    final theme = Theme.of(context);
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              backgroundColor: bgDark,
+              backgroundColor: theme.colorScheme.surface,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: neonPink.withOpacity(0.5), width: 1),
+                borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
+                side: BorderSide(
+                  color: _isNeo ? Colors.black : theme.colorScheme.primary,
+                  width: _isNeo ? 3 : 1.5,
+                ),
               ),
               title: Row(
                 children: [
-                  Icon(Icons.bug_report, color: neonPink, size: 24),
+                  Icon(Icons.bug_report, color: theme.colorScheme.primary, size: 24),
                   const SizedBox(width: 10),
                   Text(
                     "PILIH BUG NOMOR",
                     style: TextStyle(
-                      color: primaryWhite,
+                      color: _textColor,
                       fontWeight: FontWeight.bold,
-                      fontFamily: 'Orbitron',
-                      fontSize: 18,
+                      fontSize: 16,
                     ),
                   ),
                 ],
@@ -166,12 +150,14 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
                       margin: const EdgeInsets.symmetric(vertical: 4),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? neonPink.withOpacity(0.15)
+                            ? theme.colorScheme.primary.withOpacity(0.15)
                             : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(_isNeo ? 4 : 12),
                         border: Border.all(
-                          color: isSelected ? neonPink : borderGlass,
-                          width: 1,
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : (_isNeo ? Colors.black26 : theme.colorScheme.primary.withOpacity(0.2)),
+                          width: _isNeo ? 2 : 1,
                         ),
                       ),
                       child: ListTile(
@@ -179,14 +165,11 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
                           isSelected
                               ? Icons.check_circle
                               : Icons.radio_button_unchecked,
-                          color: isSelected ? neonPink : textGrey,
+                          color: isSelected ? theme.colorScheme.primary : _subTextColor,
                         ),
                         title: Text(
                           bug['bug_name'],
-                          style: TextStyle(
-                            color: primaryWhite,
-                            fontFamily: 'ShareTechMono',
-                          ),
+                          style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
                         ),
                         onTap: () {
                           setState(() {
@@ -207,19 +190,31 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
                   onPressed: () => setState(() => selectedBugIds.clear()),
                   child: const Text(
                     "RESET",
-                    style: TextStyle(color: Colors.redAccent),
+                    style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
                   ),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text("CANCEL", style: TextStyle(color: textGrey)),
+                  child: Text("CANCEL", style: TextStyle(color: _subTextColor)),
                 ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: neonPink),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    side: _isNeo ? const BorderSide(color: Colors.black, width: 2) : BorderSide.none,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(_isNeo ? 4 : 8),
+                    ),
+                  ),
                   onPressed: selectedBugIds.isEmpty
                       ? null
                       : () => Navigator.pop(context),
-                  child: const Text("OK"),
+                  child: Text(
+                    "OK",
+                    style: TextStyle(
+                      color: _isNeo && _isLight ? Colors.black : Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ],
             );
@@ -251,7 +246,7 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
       final bugsParam = selectedBugIds.join(',');
       final res = await http.get(
         Uri.parse(
-          "$baseUrl/sendBug?key=$key&target=$rawInput&bug=$bugsParam&sender=$_selectedSenderType",
+          "$baseUrl/sendBug?key=$key&target=$rawInput&bug=$bugsParam&sender=private",
         ),
       );
       final data = jsonDecode(res.body);
@@ -277,35 +272,36 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
   }
 
   void _showAlert(String title, String msg) {
+    final theme = Theme.of(context);
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: bgDark,
+        backgroundColor: theme.colorScheme.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: neonPink.withOpacity(0.5)),
+          borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
+          side: BorderSide(
+            color: _isNeo ? Colors.black : theme.colorScheme.primary,
+            width: _isNeo ? 3 : 1.5,
+          ),
         ),
         title: Text(
           title,
           style: TextStyle(
-            color: neonPink,
-            fontFamily: 'Orbitron',
+            color: theme.colorScheme.primary,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
           msg,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontFamily: 'ShareTechMono',
-          ),
+          style: TextStyle(color: _subTextColor),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               "OK",
-              style: TextStyle(color: neonCyan, fontWeight: FontWeight.bold),
+              style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold),
             ),
           )
         ],
@@ -314,54 +310,70 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildHeaderPanel() {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: cardGlass,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderGlass, width: 1),
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
+        border: Border.all(
+          color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+          width: _isNeo ? 3.0 : 1.0,
+        ),
+        boxShadow: _isNeo
+            ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(4, 4))]
+            : [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withOpacity(0.12),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
       ),
       child: Row(
         children: [
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: cyberpunkGradient,
+              color: theme.colorScheme.primary,
+              border: _isNeo ? Border.all(color: Colors.black, width: 2) : null,
             ),
             child: const CircleAvatar(
-              radius: 32,
+              radius: 28,
               backgroundColor: Colors.transparent,
               backgroundImage: AssetImage('assets/images/logo.png'),
             ),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.username,
+                  widget.username.toUpperCase(),
                   style: TextStyle(
-                    color: primaryWhite,
-                    fontFamily: 'Orbitron',
+                    color: _textColor,
                     fontWeight: FontWeight.w900,
-                    fontSize: 20,
+                    fontSize: 18,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: neonPink.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: neonPink.withOpacity(0.3)),
+                    color: theme.colorScheme.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(_isNeo ? 2 : 12),
+                    border: Border.all(
+                      color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.5),
+                      width: _isNeo ? 1.5 : 1.0,
+                    ),
                   ),
                   child: Text(
                     "Role: ${widget.role.toUpperCase()} • Exp: ${widget.expiredDate}",
                     style: TextStyle(
-                      color: neonPink,
-                      fontFamily: 'ShareTechMono',
-                      fontSize: 12,
+                      color: _isNeo ? Colors.black : theme.colorScheme.primary,
+                      fontSize: 11,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -375,17 +387,23 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildVideoPlayer() {
+    final theme = Theme.of(context);
+
     if (!_isVideoInitialized) {
       return Container(
         width: double.infinity,
-        height: 200,
+        height: 180,
         margin: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: cardGlass,
-          borderRadius: BorderRadius.circular(20),
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
+          border: Border.all(
+            color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+            width: _isNeo ? 3 : 1,
+          ),
         ),
         child: Center(
-          child: CircularProgressIndicator(color: neonCyan, strokeWidth: 3),
+          child: CircularProgressIndicator(color: theme.colorScheme.primary, strokeWidth: 3),
         ),
       );
     }
@@ -393,11 +411,17 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
       width: double.infinity,
       margin: const EdgeInsets.symmetric(vertical: 20),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: neonPink.withOpacity(0.3), width: 1.5),
+        borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
+        border: Border.all(
+          color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.4),
+          width: _isNeo ? 3 : 1.5,
+        ),
+        boxShadow: _isNeo
+            ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(4, 4))]
+            : null,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(_isNeo ? 5 : 20),
         child: AspectRatio(
           aspectRatio: _videoController.value.aspectRatio,
           child: Chewie(controller: _chewieController),
@@ -406,199 +430,76 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildSenderTypeSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "GUNAKAN SENDER",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-            fontFamily: 'Orbitron',
-            letterSpacing: 1.5,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _selectedSenderType = "private"),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    color: _selectedSenderType == "private"
-                        ? neonCyan.withOpacity(0.1)
-                        : cardGlass,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: _selectedSenderType == "private"
-                          ? neonCyan
-                          : borderGlass,
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.person,
-                        color: _selectedSenderType == "private"
-                            ? neonCyan
-                            : textGrey,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "PRIVATE SENDER",
-                        style: TextStyle(
-                          color: _selectedSenderType == "private"
-                              ? neonCyan
-                              : textGrey,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          fontFamily: 'Orbitron',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: GestureDetector(
-                onTap: () {
-                  if (_isAllowedToUseGlobal) {
-                    setState(() => _selectedSenderType = "global");
-                  } else {
-                    _showAlert(
-                      "🔒 AKSES TERKUNCI",
-                      "Global Sender khusus Admin/Reseller/Owner.",
-                    );
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    color: _selectedSenderType == "global"
-                        ? laserPurple.withOpacity(0.15)
-                        : cardGlass,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: _selectedSenderType == "global"
-                          ? laserPurple
-                          : borderGlass,
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        _isAllowedToUseGlobal ? Icons.public : Icons.lock,
-                        color: _selectedSenderType == "global"
-                            ? laserPurple
-                            : textGrey,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        "GLOBAL SENDER",
-                        style: TextStyle(
-                          color: _isAllowedToUseGlobal
-                              ? (_selectedSenderType == "global"
-                                  ? laserPurple
-                                  : primaryWhite)
-                              : textGrey.withOpacity(0.4),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                          fontFamily: 'Orbitron',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildInputPanel() {
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildSenderTypeSelector(),
-        const SizedBox(height: 24),
-        const Text(
+        Text(
           "NOMOR TARGET",
           style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-            fontFamily: 'Orbitron',
-            letterSpacing: 1.5,
+            color: _textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+            letterSpacing: 1.2,
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: cardGlass,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: TextField(
-            controller: targetController,
-            style: TextStyle(color: primaryWhite, fontSize: 16),
-            cursorColor: neonCyan,
-            keyboardType: TextInputType.phone,
-            decoration: InputDecoration(
-              hintText: "Contoh: +62xxxxxxxxxx",
-              hintStyle: TextStyle(color: textGrey.withOpacity(0.3)),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: borderGlass),
+        TextField(
+          controller: targetController,
+          style: TextStyle(color: _textColor, fontSize: 15),
+          cursorColor: theme.colorScheme.primary,
+          keyboardType: TextInputType.phone,
+          decoration: InputDecoration(
+            hintText: "Contoh: +62xxxxxxxxxx",
+            hintStyle: TextStyle(color: _subTextColor),
+            filled: true,
+            fillColor: theme.colorScheme.surface,
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(_isNeo ? 4 : 16),
+              borderSide: BorderSide(
+                color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                width: _isNeo ? 2 : 1,
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(color: neonCyan, width: 2),
-              ),
-              prefixIcon: Icon(Icons.phone_android_rounded, color: neonCyan),
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
             ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(_isNeo ? 4 : 16),
+              borderSide: BorderSide(
+                color: _isNeo ? Colors.black : theme.colorScheme.primary,
+                width: 2,
+              ),
+            ),
+            prefixIcon: Icon(Icons.phone_android_rounded, color: theme.colorScheme.primary),
+            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 20),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               "PILIH BUG NOMOR",
               style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-                fontFamily: 'Orbitron',
-                letterSpacing: 1.5,
+                color: _textColor,
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                letterSpacing: 1.2,
               ),
             ),
             if (selectedBugIds.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: neonPink,
-                  borderRadius: BorderRadius.circular(12),
+                  color: theme.colorScheme.primary,
+                  borderRadius: BorderRadius.circular(_isNeo ? 2 : 12),
+                  border: _isNeo ? Border.all(color: Colors.black, width: 1.5) : null,
                 ),
                 child: Text(
                   "${selectedBugIds.length} dipilih",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
+                  style: TextStyle(
+                    color: _isNeo && _isLight ? Colors.black : Colors.white,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -609,11 +510,17 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
         GestureDetector(
           onTap: _showBugSelectionPopup,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: cardGlass,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: borderGlass, width: 1.5),
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(_isNeo ? 4 : 16),
+              border: Border.all(
+                color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                width: _isNeo ? 2 : 1.5,
+              ),
+              boxShadow: _isNeo
+                  ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(3, 3))]
+                  : null,
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -622,7 +529,7 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
                   child: selectedBugIds.isEmpty
                       ? Text(
                           "Klik untuk memilih bug",
-                          style: TextStyle(color: textGrey, fontSize: 14),
+                          style: TextStyle(color: _subTextColor, fontSize: 14),
                         )
                       : Wrap(
                           spacing: 8,
@@ -633,29 +540,28 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
                               orElse: () => {'bug_name': 'Unknown'},
                             );
                             return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: neonPink.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(12),
+                                color: theme.colorScheme.primary.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(_isNeo ? 2 : 12),
                                 border: Border.all(
-                                  color: neonPink.withOpacity(0.4),
+                                  color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.5),
+                                  width: _isNeo ? 1.5 : 1,
                                 ),
                               ),
                               child: Text(
                                 bug['bug_name'] ?? 'Unknown',
                                 style: TextStyle(
-                                  color: neonPink,
+                                  color: _isNeo ? Colors.black : theme.colorScheme.primary,
                                   fontSize: 12,
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                             );
                           }).toList(),
                         ),
                 ),
-                Icon(Icons.arrow_drop_down, color: neonPink, size: 28),
+                Icon(Icons.arrow_drop_down, color: theme.colorScheme.primary, size: 28),
               ],
             ),
           ),
@@ -665,51 +571,60 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
   }
 
   Widget _buildSendButton() {
+    final theme = Theme.of(context);
+
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
         return Container(
-          height: 65,
+          height: 55,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: cyberpunkGradient,
-            boxShadow: [
-              BoxShadow(
-                color: neonPink.withOpacity(0.4),
-                blurRadius: _pulseController.value * 25,
-              )
-            ],
+            borderRadius: BorderRadius.circular(_isNeo ? 6 : 20),
+            color: theme.colorScheme.primary,
+            border: _isNeo ? Border.all(color: Colors.black, width: 2.5) : null,
+            boxShadow: _isNeo
+                ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(4, 4))]
+                : [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withOpacity(0.4),
+                      blurRadius: _pulseController.value * 20,
+                    )
+                  ],
           ),
           child: ElevatedButton(
             onPressed: _isSending ? null : _sendBug,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(_isNeo ? 6 : 20),
               ),
               elevation: 0,
             ),
             child: _isSending
-                ? const SizedBox(
+                ? SizedBox(
                     height: 24,
                     width: 24,
                     child: CircularProgressIndicator(
-                      color: Colors.white,
+                      color: _isNeo && _isLight ? Colors.black : Colors.white,
                       strokeWidth: 3,
                     ),
                   )
-                : const Row(
+                : Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.rocket_launch_rounded, color: Colors.white),
-                      SizedBox(width: 12),
+                      Icon(
+                        Icons.rocket_launch_rounded,
+                        color: _isNeo && _isLight ? Colors.black : Colors.white,
+                      ),
+                      const SizedBox(width: 12),
                       Text(
                         "SEND BUG NUMBER",
                         style: TextStyle(
-                          color: Colors.white,
+                          color: _isNeo && _isLight ? Colors.black : Colors.white,
                           fontWeight: FontWeight.w900,
-                          fontSize: 18,
-                          fontFamily: 'Orbitron',
+                          fontSize: 16,
+                          letterSpacing: 1.1,
                         ),
                       )
                     ],
@@ -723,6 +638,8 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
   Widget _buildResponseMessage() {
     if (_responseMessage == null) return const SizedBox.shrink();
     final isSuccess = _responseMessage!.startsWith('✅');
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.only(top: 20),
       child: Container(
@@ -731,24 +648,24 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
           color: isSuccess
               ? Colors.green.withOpacity(0.15)
               : Colors.red.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(_isNeo ? 6 : 16),
           border: Border.all(
-            color: isSuccess ? Colors.greenAccent : Colors.redAccent,
+            color: _isNeo ? Colors.black : (isSuccess ? Colors.green : Colors.redAccent),
+            width: _isNeo ? 2 : 1,
           ),
         ),
         child: Row(
           children: [
             Icon(
               isSuccess ? Icons.check_circle : Icons.error,
-              color: isSuccess ? Colors.greenAccent : Colors.redAccent,
+              color: isSuccess ? Colors.green : Colors.redAccent,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 _responseMessage!,
                 style: TextStyle(
-                  color: isSuccess ? Colors.greenAccent : Colors.redAccent,
-                  fontFamily: 'ShareTechMono',
+                  color: isSuccess ? Colors.green : Colors.redAccent,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -761,18 +678,35 @@ class _NHomePageState extends State<NHomePage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      backgroundColor: bgDark,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: Text(
+          "BUG NUMBER MODULE",
+          style: TextStyle(
+            color: _textColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.primary),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               _buildHeaderPanel(),
               _buildVideoPlayer(),
               _buildInputPanel(),
-              const SizedBox(height: 30),
+              const SizedBox(height: 24),
               _buildSendButton(),
               _buildResponseMessage(),
             ],

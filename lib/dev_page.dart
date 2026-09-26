@@ -25,7 +25,7 @@ class _DevPageState extends State<DevPage> {
   List<dynamic> filteredList = [];
 
   // Role Options untuk Owner: Admin, Reseller, Member
-  final List<String> roleOptions = ['staff', 'owner', 'admin', 'vip', 'reseller', 'member'];
+  final List<String> roleOptions = ['team', 'staff', 'owner', 'admin', 'vip', 'reseller', 'member'];
   String selectedRole = 'member'; // Default view
 
   int currentPage = 1;

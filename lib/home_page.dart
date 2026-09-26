@@ -4,6 +4,7 @@ import 'package:chewie/chewie.dart';
 
 import 'nomer_page.dart';
 import 'group_page.dart';
+import 'Nspam.dart';
 import 'app_theme.dart';
 
 class BugModulePage extends StatefulWidget {
@@ -11,6 +12,7 @@ class BugModulePage extends StatefulWidget {
   final String password;
   final String sessionKey;
   final List<Map<String, dynamic>> listBug;
+  final List<Map<String, dynamic>> listSpam;
   final String role;
   final String expiredDate;
 
@@ -20,6 +22,7 @@ class BugModulePage extends StatefulWidget {
     required this.password,
     required this.sessionKey,
     required this.listBug,
+    required this.listSpam
     required this.role,
     required this.expiredDate,
   });
@@ -115,6 +118,7 @@ class _BugModulePageState extends State<BugModulePage> {
                         "ATTACK NUMBER",
                         "CRASH SYSTEM",
                         "SPAM BUG",
+                        "SENDER PRIVATE",
                       ],
                       buttonText: "START MODULE",
                       onStart: () {
@@ -142,7 +146,7 @@ class _BugModulePageState extends State<BugModulePage> {
                       features: [
                         "ATTACK VIA LINK WA GROUP TARGET",
                         "SPAM RAID MULTI ANGGOTA GRUP WA",
-                        "MENDUKUNG SENDER PRIVATE & GLOBAL",
+                        "SENDER PRIVATE",
                       ],
                       buttonText: "START MODULE",
                       onStart: () {
@@ -150,6 +154,35 @@ class _BugModulePageState extends State<BugModulePage> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => GroupPage(
+                              username: widget.username,
+                              password: widget.password,
+                              sessionKey: widget.sessionKey,
+                              listBug: widget.listBug,
+                              role: widget.role,
+                              expiredDate: widget.expiredDate,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildModuleCard(
+                      title: "BUG NOMOR V2",
+                      subtitle: "TARGET NOMOR",
+                      badgeText: "NUMBER ONLY",
+                      badgeColor: theme.colorScheme.primary,
+                      iconData: Icons.phone_android_rounded,
+                      features: [
+                        "ATTACK NUMBER",
+                        "CRASH SYSTEM",
+                        "NO SPAM BUG",
+                        "SENDER GLOBAL",
+                      ],
+                      buttonText: "START MODULE",
+                      onStart: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => NHomePage(
                               username: widget.username,
                               password: widget.password,
                               sessionKey: widget.sessionKey,

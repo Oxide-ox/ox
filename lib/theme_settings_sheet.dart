@@ -240,7 +240,7 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
                           child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black45,
-                              padding: const EdgeInsets.vertical(12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                                 side: BorderSide(color: _neonPink.withOpacity(0.5)),
@@ -260,7 +260,7 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
                           child: ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white10,
-                              padding: const EdgeInsets.vertical(12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
                                 side: const BorderSide(color: Colors.white30),

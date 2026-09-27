@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:audio_service/audio_service.dart';
 import 'audio_handler.dart';    
 
-// Sembunyikan AppTheme dari file lain agar tidak bentrok
 import 'login_page.dart' hide AppTheme;
 import 'dashboard_page.dart';
 import 'home_page.dart';
@@ -17,20 +16,18 @@ import 'dev_page.dart';
 import 'owner_page.dart';
 import 'landing.dart' hide AppTheme;
 
-// Sumber utama AppTheme
 import 'app_theme.dart';
 
 import 'game/game_provider.dart';
 import 'game/game_screen.dart';
 
-// Catatan: Jika 'Api' berasal dari btrapps, sesuaikan nama filenya di sini
 import 'btrapps/.dart'; 
 
 AudioHandler? globalAudioHandler;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Api.loadGh(); // Pastikan class Api sudah diimport jika digunakan
+  await Api.loadGh();
   await Firebase.initializeApp();
   
   runApp(
@@ -51,14 +48,7 @@ class MyApp extends StatelessWidget {
     return ValueListenableBuilder<int>(
       valueListenable: themeModeNotifier,
       builder: (context, modeIndex, child) {
-        ThemeData currentTheme;
-        if (modeIndex == 1) {
-          currentTheme = AppTheme.neoDarkNeon;
-        } else if (modeIndex == 2) {
-          currentTheme = AppTheme.neoCreamPastel;
-        } else {
-          currentTheme = AppTheme.classic;
-        }
+        final currentTheme = AppTheme.currentTheme;
 
         return MaterialApp(
           debugShowCheckedModeBanner: false,
@@ -77,14 +67,15 @@ class MyApp extends StatelessWidget {
                   builder: (_) => DashboardPage(
                     userId: args['userId'] ?? "000000",
                     level: args['level'] ?? "1",
-                    username: args['username'],
-                    password: args['password'],
-                    role: args['role'],
-                    sessionKey: args['key'],
-                    expiredDate: args['expiredDate'],
+                    username: args['username'] ?? "",
+                    password: args['password'] ?? "",
+                    role: args['role'] ?? "",
+                    sessionKey: args['key'] ?? args['sessionKey'] ?? "",
+                    expiredDate: args['expiredDate'] ?? "",
                     listBug: List<Map<String, dynamic>>.from(args['listBug'] ?? []),
+                    listSpam: List<Map<String, dynamic>>.from(args['listSpam'] ?? []),
                     listDoos: List<Map<String, dynamic>>.from(args['listDoos'] ?? []),
-                    news: List<Map<String, dynamic>>.from(args['news'] ?? []),
+                    news: List<dynamic>.from(args['news'] ?? []),
                   ),
                 );
 
@@ -92,12 +83,13 @@ class MyApp extends StatelessWidget {
                 final args = settings.arguments as Map<String, dynamic>;
                 return MaterialPageRoute(
                   builder: (_) => BugModulePage(
-                    username: args['username'],
-                    password: args['password'],
+                    username: args['username'] ?? "",
+                    password: args['password'] ?? "",
+                    sessionKey: args['sessionKey'] ?? "",
                     listBug: List<Map<String, dynamic>>.from(args['listBug'] ?? []),
-                    role: args['role'],
-                    expiredDate: args['expiredDate'],
-                    sessionKey: args['sessionKey'],
+                    listSpam: List<Map<String, dynamic>>.from(args['listSpam'] ?? []),
+                    role: args['role'] ?? "",
+                    expiredDate: args['expiredDate'] ?? "",
                   ),
                 );
 
@@ -105,7 +97,7 @@ class MyApp extends StatelessWidget {
                 final args = settings.arguments as Map<String, dynamic>;
                 return MaterialPageRoute(
                   builder: (_) => SellerPage(
-                    keyToken: args['keyToken'],
+                    keyToken: args['keyToken'] ?? "",
                   ),
                 );
 
@@ -113,7 +105,7 @@ class MyApp extends StatelessWidget {
                 final args = settings.arguments as Map<String, dynamic>;
                 return MaterialPageRoute(
                   builder: (_) => AdminPage(
-                    sessionKey: args['sessionKey'],
+                    sessionKey: args['sessionKey'] ?? "",
                   ),
                 );
 
@@ -121,8 +113,8 @@ class MyApp extends StatelessWidget {
                 final args = settings.arguments as Map<String, dynamic>;
                 return MaterialPageRoute(
                   builder: (_) => OwnerPage(
-                    sessionKey: args['sessionKey'],
-                    username: args['username'],
+                    sessionKey: args['sessionKey'] ?? "",
+                    username: args['username'] ?? "",
                   ),
                 );
 

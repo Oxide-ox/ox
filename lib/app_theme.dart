@@ -61,7 +61,7 @@ class AppTheme {
             secondary: neoSecondaryNotifier.value,
             surface: neoBgNotifier.value,
           ),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             color: neoBgNotifier.value,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -82,7 +82,7 @@ class AppTheme {
             secondary: popSecondaryNotifier.value,
             surface: Colors.white,
           ),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             color: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -101,7 +101,7 @@ class AppTheme {
             secondary: Color(0xFF8E00C7),
             surface: Color(0xFF17092C),
           ),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             color: const Color(0xFF17092C),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(22),

@@ -1,4 +1,4 @@
-import 'dart:ui'; // Tetap dipertahankan, meskipun filter blur dihapus
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'dashboard_page.dart';
@@ -12,19 +12,21 @@ class SplashScreen extends StatefulWidget {
   final String expiredDate;
   final String sessionKey;
   final List<Map<String, dynamic>> listBug;
+  final List<Map<String, dynamic>> listSpam; // <--- Ditambahkan
   final List<Map<String, dynamic>> listDoos;
   final List<dynamic> news;
 
   const SplashScreen({
     super.key,
-    required this.userId,       // <--- INI YG BIKIN ERROR, KETINGGALAN DIMASUKIN
-    required this.level,        // <--- INI JUGA KETINGGALAN
+    required this.userId,
+    required this.level,
     required this.username,
     required this.password,
     required this.role,
     required this.expiredDate,
     required this.sessionKey,
     required this.listBug,
+    required this.listSpam, // <--- Ditambahkan
     required this.listDoos,
     required this.news,
   });
@@ -75,14 +77,15 @@ class _SplashScreenState extends State<SplashScreen>
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => DashboardPage(
-          userId: widget.userId,       // <--- INI DITAMBAHIN
-          level: widget.level,         // <--- INI DITAMBAHIN
+          userId: widget.userId,
+          level: widget.level,
           username: widget.username,
           password: widget.password,
           role: widget.role,
           expiredDate: widget.expiredDate,
           sessionKey: widget.sessionKey,
           listBug: widget.listBug,
+          listSpam: widget.listSpam, // <--- Diteruskan ke DashboardPage
           listDoos: widget.listDoos,
           news: widget.news,
         ),
@@ -118,7 +121,7 @@ class _SplashScreenState extends State<SplashScreen>
           else
             const Center(child: CircularProgressIndicator()),
 
-          // --- TEKS "FIXCH" ---
+          // --- TEKS BRANDING ---
           Positioned(
             bottom: 80,
             left: 0,
@@ -148,23 +151,21 @@ class _SplashScreenState extends State<SplashScreen>
             ),
           ),
 
-          // --- TOMBOL SKIP INTRO (BARU) ---
+          // --- TOMBOL SKIP INTRO ---
           Positioned(
-            top: 40, // Jarak dari atas
-            right: 20, // Jarak dari kanan
+            top: 40,
+            right: 20,
             child: GestureDetector(
               onTap: () {
-                // Pause video agar suara berhenti
                 _videoController.pause();
-                // Langsung navigasi ke dashboard
                 _navigateToDashboard();
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5), // Background semi-transparan
+                  color: Colors.black.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white, width: 1), // Border putih
+                  border: Border.all(color: Colors.white, width: 1),
                 ),
                 child: const Text(
                   "SKIP INTRO",

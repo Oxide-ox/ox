@@ -22,7 +22,7 @@ class BugModulePage extends StatefulWidget {
     required this.password,
     required this.sessionKey,
     required this.listBug,
-    required this.listSpam
+    required this.listSpam, // Perbaikan: Menambahkan koma yang hilang di sini
     required this.role,
     required this.expiredDate,
   });
@@ -125,11 +125,11 @@ class _BugModulePageState extends State<BugModulePage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => NHomePage(
+                            builder: (_) => SpamNHomePage(
                               username: widget.username,
                               password: widget.password,
                               sessionKey: widget.sessionKey,
-                              listBug: widget.listBug,
+                              listSpam: widget.listSpam,
                               role: widget.role,
                               expiredDate: widget.expiredDate,
                             ),
@@ -182,11 +182,11 @@ class _BugModulePageState extends State<BugModulePage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => NHomePage(
+                            builder: (_) => SpamNHomePage(
                               username: widget.username,
                               password: widget.password,
                               sessionKey: widget.sessionKey,
-                              listBug: widget.listBug,
+                              listSpam: widget.listSpam,
                               role: widget.role,
                               expiredDate: widget.expiredDate,
                             ),

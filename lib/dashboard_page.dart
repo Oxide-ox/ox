@@ -457,6 +457,7 @@ class _DashboardPageState extends State<DashboardPage>
           username: username,
           password: password,
           listBug: listBug,
+          listSpam: listSpam,
           role: role,
           expiredDate: expiredDate,
           sessionKey: sessionKey,

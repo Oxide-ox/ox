@@ -92,7 +92,7 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
               sessionKey: data['key'],
               expiredDate: data['expiredDate'],
               listBug: (data['listBug'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
-              listSpam: (validData['listSpam'] as List? ?? [])
+              listSpam: (data['listSpam'] as List? ?? [])
                     .map((e) => Map<String, dynamic>.from(e as Map))
                     .toList(),
               listDoos: (data['listDDoS'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList(),

@@ -129,7 +129,7 @@ class _BugModulePageState extends State<BugModulePage> {
                               username: widget.username,
                               password: widget.password,
                               sessionKey: widget.sessionKey,
-                              listSpam: widget.listBug,
+                              listBug: widget.listBug,
                               role: widget.role,
                               expiredDate: widget.expiredDate,
                             ),

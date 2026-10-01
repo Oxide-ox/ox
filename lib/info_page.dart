@@ -307,7 +307,7 @@ class _InfoPageState extends State<InfoPage> {
                   Icon(Icons.shield_moon_rounded, color: theme.colorScheme.primary, size: 30),
                   const SizedBox(height: 12),
                   Text(
-                    "Peraturan ini dibuat untuk menjaga keamanan, kenyamanan, dan kestabilan ekosistem Prikitiww App. Dengan menggunakan aplikasi ini, pengguna dianggap telah menyetujui seluruh peraturan di atas.",
+                    "Peraturan ini dibuat untuk menjaga keamanan, kenyamanan, dan kestabilan ekosistem Oxide-ox. Dengan menggunakan aplikasi ini, pengguna dianggap telah menyetujui seluruh peraturan di atas.",
                     style: TextStyle(
                       color: _subTextColor,
                       fontSize: 11,

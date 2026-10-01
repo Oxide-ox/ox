@@ -104,7 +104,7 @@ class _MainLandingPageState extends State<MainLandingPage> {
         ),
         const SizedBox(height: 4),
         const Text(
-          "App: 4.0.0 (56)",
+          "App: New Version",
           style: TextStyle(
             color: AppTheme.grayText,
             fontSize: 12,

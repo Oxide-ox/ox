@@ -125,11 +125,11 @@ class _BugModulePageState extends State<BugModulePage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => SpamNHomePage(
+                            builder: (_) => NHomePage(
                               username: widget.username,
                               password: widget.password,
                               sessionKey: widget.sessionKey,
-                              listSpam: widget.listSpam,
+                              listSpam: widget.listBug,
                               role: widget.role,
                               expiredDate: widget.expiredDate,
                             ),

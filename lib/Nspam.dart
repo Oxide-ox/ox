@@ -42,16 +42,18 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
   bool _isSending = false;
   String? _responseMessage;
 
-  // Real-time Sender Count State
+  // Real-time Sender Count State (Murni Mengikuti API)
   int _privateSenderCount = 0;
-  int _globalSenderCount = 1;
+  int _globalSenderCount = 0;
   bool _isFetchingSenders = false;
 
   // State Limit Khusus Global Sender
   int _globalUsageCount = 0;
   final int _maxGlobalLimit = 5;
-  static const String _keyGlobalUsageCount = 'global_sender_usage_count';
-  static const String _keyGlobalFirstUseTime = 'global_sender_first_use_time';
+
+  // KEY USER-SPECIFIC (Tersimpan Berdasarkan Username)
+  String get _keyGlobalUsageCount => 'global_usage_count_${widget.username.toLowerCase()}';
+  String get _keyGlobalFirstUseTime => 'global_first_use_${widget.username.toLowerCase()}';
 
   late VideoPlayerController _videoController;
   late ChewieController _chewieController;
@@ -106,7 +108,7 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
         if (mounted) {
           setState(() {
             _privateSenderCount = data['privateSenders'] ?? 0;
-            _globalSenderCount = data['globalSenders'] ?? 1;
+            _globalSenderCount = data['globalSenders'] ?? 0;
           });
         }
       }
@@ -116,6 +118,7 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
     }
   }
 
+  // FUNGSI LOAD DATA LIMIT
   Future<void> _loadGlobalUsageData() async {
     final prefs = await SharedPreferences.getInstance();
     final String? firstUseStr = prefs.getString(_keyGlobalFirstUseTime);
@@ -125,6 +128,7 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
       final firstUseTime = DateTime.parse(firstUseStr);
       final now = DateTime.now();
 
+      // Reset kuota jika sudah melewati 24 jam dari pemakaian pertama
       if (now.difference(firstUseTime).inHours >= 24) {
         count = 0;
         await prefs.setInt(_keyGlobalUsageCount, 0);
@@ -139,6 +143,7 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
     }
   }
 
+  // FUNGSI CEK & TAMBAH LIMIT
   Future<bool> _checkAndIncrementGlobalUsage() async {
     final prefs = await SharedPreferences.getInstance();
     final String? firstUseStr = prefs.getString(_keyGlobalFirstUseTime);
@@ -243,52 +248,63 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
                 constraints: BoxConstraints(
                   maxHeight: MediaQuery.of(context).size.height * 0.5,
                 ),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: widget.listSpam.length,
-                  itemBuilder: (context, index) {
-                    final bug = widget.listSpam[index];
-                    final bugId = bug['bug_id'];
-                    final isSelected = selectedBugIds.contains(bugId);
+                child: widget.listSpam.isEmpty
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Text(
+                            "Belum ada data bug spam dari server.",
+                            style: TextStyle(color: Colors.white54, fontSize: 13),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: widget.listSpam.length,
+                        itemBuilder: (context, index) {
+                          final bug = widget.listSpam[index];
+                          final bugId = bug['bug_id'];
+                          final isSelected = selectedBugIds.contains(bugId);
 
-                    return Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? theme.colorScheme.primary.withOpacity(0.15)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(_isNeo ? 4 : 12),
-                        border: Border.all(
-                          color: isSelected
-                              ? theme.colorScheme.primary
-                              : (_isNeo ? Colors.black26 : theme.colorScheme.primary.withOpacity(0.2)),
-                          width: _isNeo ? 2 : 1,
-                        ),
-                      ),
-                      child: ListTile(
-                        leading: Icon(
-                          isSelected
-                              ? Icons.check_circle
-                              : Icons.radio_button_unchecked,
-                          color: isSelected ? theme.colorScheme.primary : _subTextColor,
-                        ),
-                        title: Text(
-                          bug['bug_name'] ?? 'Unknown',
-                          style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
-                        ),
-                        onTap: () {
-                          setState(() {
-                            if (isSelected) {
-                              selectedBugIds.remove(bugId);
-                            } else {
-                              selectedBugIds.add(bugId);
-                            }
-                          });
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? theme.colorScheme.primary.withOpacity(0.15)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(_isNeo ? 4 : 12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? theme.colorScheme.primary
+                                    : (_isNeo ? Colors.black26 : theme.colorScheme.primary.withOpacity(0.2)),
+                                width: _isNeo ? 2 : 1,
+                              ),
+                            ),
+                            child: ListTile(
+                              leading: Icon(
+                                isSelected
+                                    ? Icons.check_circle
+                                    : Icons.radio_button_unchecked,
+                                color: isSelected ? theme.colorScheme.primary : _subTextColor,
+                              ),
+                              title: Text(
+                                bug['bug_name'] ?? 'Unknown',
+                                style: TextStyle(color: _textColor, fontWeight: FontWeight.bold),
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  if (isSelected) {
+                                    selectedBugIds.remove(bugId);
+                                  } else {
+                                    selectedBugIds.add(bugId);
+                                  }
+                                });
+                              },
+                            ),
+                          );
                         },
                       ),
-                    );
-                  },
-                ),
               ),
               actions: [
                 TextButton(

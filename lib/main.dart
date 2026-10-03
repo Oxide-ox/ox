@@ -28,7 +28,7 @@ AudioHandler? globalAudioHandler;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Api.loadGh();
-  await Firebase.initializeApp();
+  await AppTheme.init();
   
   runApp(
     MultiProvider(

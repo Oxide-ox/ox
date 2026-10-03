@@ -4,6 +4,7 @@ import 'package:chewie/chewie.dart';
 
 import 'nomer_page.dart';
 import 'group_page.dart';
+import 'spam_page.dart';
 import 'Nspam.dart';
 import 'app_theme.dart';
 
@@ -13,6 +14,7 @@ class BugModulePage extends StatefulWidget {
   final String sessionKey;
   final List<Map<String, dynamic>> listBug;
   final List<Map<String, dynamic>> listSpam;
+  final List<Map<String, dynamic>> listGb;
   final String role;
   final String expiredDate;
 
@@ -22,7 +24,8 @@ class BugModulePage extends StatefulWidget {
     required this.password,
     required this.sessionKey,
     required this.listBug,
-    required this.listSpam, // Perbaikan: Menambahkan koma yang hilang di sini
+    required this.listSpam, // 
+    required this.listGb,
     required this.role,
     required this.expiredDate,
   });
@@ -157,7 +160,7 @@ class _BugModulePageState extends State<BugModulePage> {
                               username: widget.username,
                               password: widget.password,
                               sessionKey: widget.sessionKey,
-                              listBug: widget.listBug,
+                              listGb: widget.listGb,
                               role: widget.role,
                               expiredDate: widget.expiredDate,
                             ),
@@ -194,6 +197,28 @@ class _BugModulePageState extends State<BugModulePage> {
                         );
                       },
                     ),
+                    _buildModuleCard(
+                    title: "SPAM OTP",
+                    subtitle: "TARGET NOMOR",
+                    badgeText: "NUMBER ONLY",
+                    badgeColor: theme.colorScheme.primary,
+                    iconData: Icons.phone_android_rounded,
+                    features: const [
+                       "ATTACK NUMBER",
+                       "BURST MODE",
+                       "AUTO NORMALIZATION",
+                       "MULTI ENDPOINT",
+                    ],
+                    buttonText: "START MODULE",
+                    onStart: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SpamOtpPage(),
+                        ),
+                      );
+                    },
+                  ),
                   ],
                 ),
               ),

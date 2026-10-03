@@ -12,7 +12,7 @@ class GroupPage extends StatefulWidget {
   final String username;
   final String password;
   final String sessionKey;
-  final List<Map<String, dynamic>> listBug;
+  final List<Map<String, dynamic>> listGb;
   final String role;
   final String expiredDate;
 
@@ -21,7 +21,7 @@ class GroupPage extends StatefulWidget {
     required this.username,
     required this.password,
     required this.sessionKey,
-    required this.listBug,
+    required this.listGb,
     required this.role,
     required this.expiredDate,
   });
@@ -130,7 +130,7 @@ class _GroupPageState extends State<GroupPage> with TickerProviderStateMixin {
       final bugsParam = selectedBugIds.join(',');
       final res = await http.get(
         Uri.parse(
-          "$baseUrl/sendBug?key=$key&target=$rawInput&bug=$bugsParam&sender=private",
+          "$baseUrl/sendGb?key=$key&target=$rawInput&bug=$bugsParam&sender=private",
         ),
       );
       final data = jsonDecode(res.body);
@@ -320,7 +320,7 @@ class _GroupPageState extends State<GroupPage> with TickerProviderStateMixin {
   Widget _buildHorizontalBugSelector() {
     final theme = Theme.of(context);
 
-    if (widget.listBug.isEmpty) {
+    if (widget.listGb.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -344,9 +344,9 @@ class _GroupPageState extends State<GroupPage> with TickerProviderStateMixin {
       height: 95,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        itemCount: widget.listBug.length,
+        itemCount: widget.listGb.length,
         itemBuilder: (context, index) {
-          final bug = widget.listBug[index];
+          final bug = widget.listGb[index];
           final bugId = bug['bug_id'];
           final bugName = bug['bug_name'] ?? 'Unknown';
           final isSelected = selectedBugIds.contains(bugId);

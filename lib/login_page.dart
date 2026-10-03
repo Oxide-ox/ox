@@ -393,6 +393,9 @@ class _LoginPageState extends State<LoginPage> {
                 listSpam: (validData['listSpam'] as List? ?? [])
                     .map((e) => Map<String, dynamic>.from(e as Map))
                     .toList(),
+                listGb: (validData['listGb'] as List? ?? [])
+                    .map((e) => Map<String, dynamic>.from(e as Map))
+                    .toList(),
                 listDoos: (validData['listDDoS'] as List? ?? [])
                     .map((e) => Map<String, dynamic>.from(e as Map))
                     .toList(),

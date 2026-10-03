@@ -45,6 +45,7 @@ class DashboardPage extends StatefulWidget {
   final String sessionKey;
   final List<Map<String, dynamic>> listBug;
   final List<Map<String, dynamic>> listSpam;
+  final List<Map<String, dynamic>> listGb;
   final List<Map<String, dynamic>> listDoos;
   final List<dynamic> news;
 
@@ -58,6 +59,7 @@ class DashboardPage extends StatefulWidget {
     required this.expiredDate,
     required this.listBug,
     required this.listSpam,
+    required this.listGb,
     required this.listDoos,
     required this.sessionKey,
     required this.news,
@@ -79,6 +81,7 @@ class _DashboardPageState extends State<DashboardPage>
   late String expiredDate;
   late List<Map<String, dynamic>> listBug;
   late List<Map<String, dynamic>> listSpam;
+  late List<Map<String, dynamic>> listGb;
   late List<Map<String, dynamic>> listDoos;
   late List<dynamic> newsList;
 
@@ -119,6 +122,7 @@ class _DashboardPageState extends State<DashboardPage>
     expiredDate = widget.expiredDate;
     listBug = widget.listBug;
     listSpam = widget.listSpam;
+    listGb = widget.listGb;
     listDoos = widget.listDoos;
     newsList = widget.news;
 
@@ -316,6 +320,7 @@ class _DashboardPageState extends State<DashboardPage>
           password: password,
           listBug: listBug,
           listSpam: listSpam,
+          listGb: listGb;
           role: role,
           expiredDate: expiredDate,
           sessionKey: sessionKey,

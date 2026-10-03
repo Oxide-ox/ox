@@ -95,6 +95,9 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
               listSpam: (data['listSpam'] as List? ?? [])
                     .map((e) => Map<String, dynamic>.from(e as Map))
                     .toList(),
+              listGb: (data['listGb'] as List? ?? [])
+                    .map((e) => Map<String, dynamic>.from(e as Map))
+                    .toList(),
               listDoos: (data['listDDoS'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
               news: (data['news'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
             ),

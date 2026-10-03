@@ -13,6 +13,7 @@ class SplashScreen extends StatefulWidget {
   final String sessionKey;
   final List<Map<String, dynamic>> listBug;
   final List<Map<String, dynamic>> listSpam; // <--- Ditambahkan
+  final List<Map<String, dynamic>> listGb;
   final List<Map<String, dynamic>> listDoos;
   final List<dynamic> news;
 
@@ -27,6 +28,7 @@ class SplashScreen extends StatefulWidget {
     required this.sessionKey,
     required this.listBug,
     required this.listSpam, // <--- Ditambahkan
+    required this.listGb,
     required this.listDoos,
     required this.news,
   });
@@ -85,7 +87,8 @@ class _SplashScreenState extends State<SplashScreen>
           expiredDate: widget.expiredDate,
           sessionKey: widget.sessionKey,
           listBug: widget.listBug,
-          listSpam: widget.listSpam, // <--- Diteruskan ke DashboardPage
+          listSpam: widget.listSpam, 
+          listGb: widget.listGb,
           listDoos: widget.listDoos,
           news: widget.news,
         ),

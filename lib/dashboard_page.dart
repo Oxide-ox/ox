@@ -320,7 +320,7 @@ class _DashboardPageState extends State<DashboardPage>
           password: password,
           listBug: listBug,
           listSpam: listSpam,
-          listGb: listGb;
+          listGb: listGb,
           role: role,
           expiredDate: expiredDate,
           sessionKey: sessionKey,

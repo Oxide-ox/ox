@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// 1. NOTIFIER MODE TEMA (0 = Original, 1 = Neo Brutalism, 2 = Pop Art)
 final ValueNotifier<int> themeModeNotifier = ValueNotifier<int>(0);
 
-// 2. NOTIFIERS WARNA NEO BRUTALISM (MODE 1)
 final ValueNotifier<Color> neoBgNotifier = ValueNotifier<Color>(const Color(0xFF0F0A1C));
 final ValueNotifier<Color> neoPrimaryNotifier = ValueNotifier<Color>(const Color(0xFFFF2B7A));
 final ValueNotifier<Color> neoSecondaryNotifier = ValueNotifier<Color>(const Color(0xFFFFE600));
 final ValueNotifier<Color> neoBorderNotifier = ValueNotifier<Color>(const Color(0xFF000000));
 
-// 3. NOTIFIERS WARNA POP ART (MODE 2)
 final ValueNotifier<Color> popBgNotifier = ValueNotifier<Color>(const Color(0xFF180161));
 final ValueNotifier<Color> popPrimaryNotifier = ValueNotifier<Color>(const Color(0xFF00E5FF));
 final ValueNotifier<Color> popSecondaryNotifier = ValueNotifier<Color>(const Color(0xFFEC4899));
@@ -19,7 +16,6 @@ final ValueNotifier<Color> popBorderNotifier = ValueNotifier<Color>(const Color(
 class AppTheme {
   static bool _isInitializing = false;
 
-  /// INI DIPANGGUL DI main() UNTUK MEMUAT DATA TEMA SAAT APLIKASI PERTAMA DIBUKA
   static Future<void> init() async {
     _isInitializing = true;
     final prefs = await SharedPreferences.getInstance();
@@ -27,13 +23,11 @@ class AppTheme {
     // Load Mode Tema
     themeModeNotifier.value = prefs.getInt('theme_mode') ?? 0;
 
-    // Load Warna Neo Brutalism
     neoBgNotifier.value = Color(prefs.getInt('neo_bg') ?? 0xFF0F0A1C);
     neoPrimaryNotifier.value = Color(prefs.getInt('neo_primary') ?? 0xFFFF2B7A);
     neoSecondaryNotifier.value = Color(prefs.getInt('neo_secondary') ?? 0xFFFFE600);
     neoBorderNotifier.value = Color(prefs.getInt('neo_border') ?? 0xFF000000);
 
-    // Load Warna Pop Art
     popBgNotifier.value = Color(prefs.getInt('pop_bg') ?? 0xFF180161);
     popPrimaryNotifier.value = Color(prefs.getInt('pop_primary') ?? 0xFF00E5FF);
     popSecondaryNotifier.value = Color(prefs.getInt('pop_secondary') ?? 0xFFEC4899);
@@ -41,7 +35,7 @@ class AppTheme {
 
     _isInitializing = false;
 
-    // Pasang Listener Otomatis Menyimpan Setiap Ada Perubahan Warna / Mode
+
     themeModeNotifier.addListener(_saveThemePreferences);
     neoBgNotifier.addListener(_saveThemePreferences);
     neoPrimaryNotifier.addListener(_saveThemePreferences);
@@ -53,27 +47,24 @@ class AppTheme {
     popBorderNotifier.addListener(_saveThemePreferences);
   }
 
-  /// FUNGSI PRIVATE UNTUK MENYIMPAN KE SHAREDPREFERENCES
+
   static Future<void> _saveThemePreferences() async {
     if (_isInitializing) return;
     final prefs = await SharedPreferences.getInstance();
 
     await prefs.setInt('theme_mode', themeModeNotifier.value);
 
-    // Save Neo Colors
     await prefs.setInt('neo_bg', neoBgNotifier.value.value);
     await prefs.setInt('neo_primary', neoPrimaryNotifier.value.value);
     await prefs.setInt('neo_secondary', neoSecondaryNotifier.value.value);
     await prefs.setInt('neo_border', neoBorderNotifier.value.value);
 
-    // Save Pop Art Colors
     await prefs.setInt('pop_bg', popBgNotifier.value.value);
     await prefs.setInt('pop_primary', popPrimaryNotifier.value.value);
     await prefs.setInt('pop_secondary', popSecondaryNotifier.value.value);
     await prefs.setInt('pop_border', popBorderNotifier.value.value);
   }
 
-  // PRESET QUICK DARK/LIGHT UNTUK NEO BRUTALISM
   static void applyNeoPreset({required bool isDark}) {
     if (isDark) {
       neoBgNotifier.value = const Color(0xFF0F0A1C);
@@ -89,7 +80,6 @@ class AppTheme {
     themeModeNotifier.notifyListeners();
   }
 
-  // PRESET QUICK DARK/LIGHT UNTUK POP ART
   static void applyPopArtPreset({required bool isDark}) {
     if (isDark) {
       popBgNotifier.value = const Color(0xFF180161);
@@ -105,12 +95,11 @@ class AppTheme {
     themeModeNotifier.notifyListeners();
   }
 
-  // GETTER TEMA AKTIF SESUAI MODE
   static ThemeData get currentTheme {
     final mode = themeModeNotifier.value;
 
     if (mode == 1) {
-      // MODE 1: NEO BRUTALISM
+      
       return ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: neoBgNotifier.value,
@@ -122,7 +111,7 @@ class AppTheme {
         ),
       );
     } else if (mode == 2) {
-      // MODE 2: POP ART
+      
       return ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: popBgNotifier.value,
@@ -135,7 +124,6 @@ class AppTheme {
       );
     }
 
-    // MODE 0: ORIGINAL CYBERPUNK
     return ThemeData(
       brightness: Brightness.dark,
       scaffoldBackgroundColor: const Color(0xFF090212),

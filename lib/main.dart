@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:audio_service/audio_service.dart';
 import 'audio_handler.dart';    
 
-// IMPORT MUSIK (Permission Handler dihapus dari sini)
+// IMPORT MUSIK & MINI PLAYER
 import 'package:just_audio_background/just_audio_background.dart';
 import 'providers/music_provider.dart'; 
 import 'global_mini_player.dart'; 
@@ -30,32 +30,99 @@ import 'btrapps/.dart';
 
 AudioHandler? globalAudioHandler;
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // INIT BACKGROUND AUDIO TETAP DI SINI
-  await JustAudioBackground.init(
-    androidNotificationChannelId: 'com.oxide.music.channel.audio',
-    androidNotificationChannelName: 'Audio playback',
-    androidNotificationOngoing: true,
-  );
+      await Api.loadGh();
+  runApp(const AppBootloader());
+}
 
-  await Api.loadGh();
-  await AppTheme.init();
-  
-  runApp(
-    MultiProvider(
+class AppBootloader extends StatefulWidget {
+  const AppBootloader({super.key});
+
+  @override
+  State<AppBootloader> createState() => _AppBootloaderState();
+}
+
+class _AppBootloaderState extends State<AppBootloader> {
+  bool _isReady = false;
+  String _statusText = "Memulai Sistem Oxide...";
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeHeavyTasks();
+  }
+
+  Future<void> _initializeHeavyTasks() async {
+    try {
+      if (mounted) setState(() => _statusText = "Menyiapkan Audio Engine...");
+      await JustAudioBackground.init(
+        androidNotificationChannelId: 'com.oxide.music.channel.audio',
+        androidNotificationChannelName: 'Audio playback',
+        androidNotificationOngoing: true,
+      );
+
+      if (mounted) setState(() => _statusText = "Menghubungkan ke Server (API)...");
+      
+      if (mounted) setState(() => _statusText = "Memuat Tema & Konfigurasi...");
+      
+      await AppTheme.init();
+
+      if (mounted) {
+        setState(() {
+          _isReady = true;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error Init: $e");
+      if (mounted) setState(() => _statusText = "Terjadi masalah: $e");
+      
+      // Jika terjadi error (misal internet putus), tetap paksa masuk ke aplikasi
+      // setelah menunggu 2 detik agar user tidak terjebak selamanya di layar loading.
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) setState(() => _isReady = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_isReady) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          backgroundColor: const Color(0xFF0D0D0E),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const CircularProgressIndicator(color: Color(0xFFE6007E)),
+                const SizedBox(height: 20),
+                Text(
+                  _statusText,
+                  style: const TextStyle(
+                    color: Colors.white70, 
+                    fontFamily: 'monospace', 
+                    fontSize: 12
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => GameProvider()),
-        // MUSIC PROVIDER TETAP DI SINI
         ChangeNotifierProvider(create: (_) => MusicProvider()),
       ],
       child: const MyApp(),
-    ),
-  );
+    );
+  }
 }
 
-// DIKEMBALIKAN KE STATELESS WIDGET SEPERTI KODE ASLI
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -72,12 +139,11 @@ class MyApp extends StatelessWidget {
           theme: currentTheme,
           initialRoute: '/',
           
-          // BUILDER UNTUK GLOBAL MINI PLAYER TETAP ADA
           builder: (context, child) {
             return Stack(
               children: [
                 if (child != null) child,
-                const GlobalMiniPlayer(), // Mini player akan muncul di semua halaman
+                const GlobalMiniPlayer(), 
               ],
             );
           },

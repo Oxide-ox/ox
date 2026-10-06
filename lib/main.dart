@@ -9,7 +9,7 @@ import 'audio_handler.dart';
 // TAMBAHAN IMPORT UNTUK MUSIK & IZIN
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'music_provider.dart'; // Ganti dengan path provider musikmu
+import 'providers/music_provider.dart'; // Ganti dengan path provider musikmu
 import 'global_mini_player.dart'; // Ganti dengan path widget mini player
 
 import 'login_page.dart' hide AppTheme;

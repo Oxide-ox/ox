@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'music_provider.dart'; // Ganti sesuai letak file provider-mu
-import 'full_player_screen.dart'; // Ganti sesuai letak full player
+import 'providers/music_provider.dart'; // Ganti sesuai letak file provider-mu
+import 'screens/full_player_screen.dart'; // Ganti sesuai letak full player
 
 class GlobalMiniPlayer extends StatelessWidget {
   const GlobalMiniPlayer({super.key});

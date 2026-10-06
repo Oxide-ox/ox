@@ -912,7 +912,7 @@ class _DashboardPageState extends State<DashboardPage>
         "badge": "TELEGRAM",
         "icon": FontAwesomeIcons.telegram,
         "color": isNeo ? theme.colorScheme.primary : const Color(0xFF0088CC),
-        "onTap": () => _openUrl("https://t.me/AllinformationVirz"),
+        "onTap": () => _openUrl("https://t.me/informationoxide"),
       },
       {
         "title": "Tq To Team",
@@ -1759,7 +1759,7 @@ class _DashboardPageState extends State<DashboardPage>
                     IconButton(
                       icon: Icon(Icons.headset_mic_rounded,
                           color: theme.colorScheme.primary, size: 22),
-                      onPressed: () => _openUrl("https://t.me/Virzofc"),
+                      onPressed: () => _openUrl("https://t.me/SARXXGANTENG"),
                     ),
                     const SizedBox(width: 8),
                   ],

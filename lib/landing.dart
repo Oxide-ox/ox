@@ -5,6 +5,10 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+
+// TAMBAHKAN IMPORT PERMISSION HANDLER
+import 'package:permission_handler/permission_handler.dart';
+
 import 'splash.dart';
 import 'btrapps/.dart';
 import 'login_page.dart';
@@ -46,6 +50,16 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
   void initState() {
     super.initState();
     _checkAutoLogin();
+
+    // ==========================================
+    // LOGIKA POP-UP IZIN (TIDAK BIKIN STUCK)
+    // ==========================================
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      PermissionStatus status = await Permission.notification.request();
+      if (status.isDenied) {
+        debugPrint("Izin notifikasi ditolak. Musik latar mungkin tidak berjalan optimal.");
+      }
+    });
 
     _indicatorAnimController = AnimationController(
       vsync: this,
@@ -387,7 +401,7 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
 
               // 3. Tombol Telegram Channel
               TextButton.icon(
-                onPressed: () => _openUrl("https://t.me/AllinformationVirz"),
+                onPressed: () => _openUrl("https://t.me/informationoxide"),
                 icon: const Icon(Icons.telegram, color: AppTheme.primaryMagenta, size: 20),
                 label: const Text(
                   "Telegram Channel",

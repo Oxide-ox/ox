@@ -24,6 +24,8 @@ import 'music_player_page.dart';
 import 'movie.dart';
 import 'nftoken_page.dart';
 import 'app_theme.dart';
+import 'providers/music_provider.dart';
+import 'screens/main_screen.dart';
 
 class ToolsPage extends StatelessWidget {
   final String username;
@@ -589,7 +591,7 @@ class ToolsPage extends StatelessWidget {
             Navigator.pop(context);
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const MusicPlayerScreen()),
+              MaterialPageRoute(builder: (_) => const MainScreen()),
             );
           },
         ),

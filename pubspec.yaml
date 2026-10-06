@@ -12,6 +12,7 @@ dependencies:
   
   # --- Audio & Media ---
   just_audio: ^0.9.39
+  just_audio_background: ^0.0.1-beta.13
   audio_service: ^0.18.15
   audioplayers: ^6.6.0
   youtube_player_flutter: ^9.1.1

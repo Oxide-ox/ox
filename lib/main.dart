@@ -6,6 +6,12 @@ import 'package:provider/provider.dart';
 import 'package:audio_service/audio_service.dart';
 import 'audio_handler.dart';    
 
+// TAMBAHAN IMPORT UNTUK MUSIK & IZIN
+import 'package:just_audio_background/just_audio_background.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'music_provider.dart'; // Ganti dengan path provider musikmu
+import 'global_mini_player.dart'; // Ganti dengan path widget mini player
+
 import 'login_page.dart' hide AppTheme;
 import 'dashboard_page.dart';
 import 'home_page.dart';
@@ -27,6 +33,16 @@ AudioHandler? globalAudioHandler;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // ==========================================
+  // 1. INIT BACKGROUND AUDIO (Taruh paling atas)
+  // ==========================================
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.oxide.music.channel.audio',
+    androidNotificationChannelName: 'Audio playback',
+    androidNotificationOngoing: true,
+  );
+
   await Api.loadGh();
   await AppTheme.init();
   
@@ -34,14 +50,41 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => GameProvider()),
+        // ==========================================
+        // 2. TAMBAHKAN MUSIC PROVIDER
+        // ==========================================
+        ChangeNotifierProvider(create: (_) => MusicProvider()),
       ],
       child: const MyApp(),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
+// ==========================================
+// 3. UBAH KE STATEFUL UNTUK REQUEST PERMISSION
+// ==========================================
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  
+  @override
+  void initState() {
+    super.initState();
+    _requestPermissions(); // Panggil pop-up izin notifikasi
+  }
+
+  // Fungsi memunculkan Pop-Up Izin Notifikasi (Untuk Android 13+)
+  Future<void> _requestPermissions() async {
+    PermissionStatus status = await Permission.notification.request();
+    if (status.isDenied) {
+      debugPrint("Izin notifikasi ditolak. Musik latar belakang mungkin terganggu.");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,6 +98,20 @@ class MyApp extends StatelessWidget {
           title: 'OXIDE APPS',
           theme: currentTheme,
           initialRoute: '/',
+          
+          // ==========================================
+          // 4. BUILDER UNTUK GLOBAL MINI PLAYER
+          // Membuat player mengambang di seluruh halaman aplikasi
+          // ==========================================
+          builder: (context, child) {
+            return Stack(
+              children: [
+                if (child != null) child,
+                const GlobalMiniPlayer(), // Widget Mini Player
+              ],
+            );
+          },
+
           onGenerateRoute: (settings) {
             switch (settings.name) {
               case '/':

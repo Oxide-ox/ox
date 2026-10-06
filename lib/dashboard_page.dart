@@ -194,7 +194,6 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
 
-  // FUNGSI UPLOAD STORY BARU DENGAN BEBAN API MUSIK & TEKS
   Future<void> _uploadStoryWithMusicToBackend(
       Map<String, dynamic> storyData) async {
     try {
@@ -211,6 +210,7 @@ class _DashboardPageState extends State<DashboardPage>
           'audioUrl': storyData['audioUrl'],
           'audioTitle': storyData['audioTitle'],
           'audioStartSec': storyData['audioStartSec'],
+          'imagePath': storyData['imagePath'],
         }),
       );
 
@@ -395,7 +395,6 @@ class _DashboardPageState extends State<DashboardPage>
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          // 1. TOMBOL BUAT STORY
           GestureDetector(
             onTap: _isUploadingStory
                 ? null
@@ -488,7 +487,6 @@ class _DashboardPageState extends State<DashboardPage>
               ),
             )
           else
-            // 2. DAFTAR STORY USER LAIN
             ...groupedStories.keys.map((userKey) {
               final userStories = groupedStories[userKey]!;
 
@@ -1601,7 +1599,6 @@ class _DashboardPageState extends State<DashboardPage>
                   onTap: () async {
                     Navigator.pop(context);
                     final prefs = await SharedPreferences.getInstance();
-                    // SELEKTIF MENGHAPUS SESI LOGIN (AGAR DATA LIMIT/SETTINGS TIDAK IKUT TERHAPUS)
                     await prefs.remove('username');
                     await prefs.remove('password');
                     await prefs.remove('sessionKey');
@@ -1841,7 +1838,6 @@ class _DashboardPageState extends State<DashboardPage>
     super.dispose();
   }
 }
-
 
 void openFullStoryViewer(
     BuildContext context, String username, List<dynamic> stories) {
@@ -2092,11 +2088,15 @@ class CreateStorySheet extends StatefulWidget {
 
 class _CreateStorySheetState extends State<CreateStorySheet> {
   final TextEditingController _textController = TextEditingController();
-  final TextEditingController _searchMusicController =
-      TextEditingController();
+  final TextEditingController _searchMusicController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
 
-  Color _selectedBgColor = Colors.deepPurple;
+  String _activeMode = 'text';
+
+  File? _selectedImageFile;
+  Color _selectedBgColor = const Color(0xFF1E1E2C);
   final List<Color> _bgColors = [
+    const Color(0xFF1E1E2C),
     Colors.deepPurple,
     Colors.indigo,
     Colors.teal,
@@ -2114,15 +2114,27 @@ class _CreateStorySheetState extends State<CreateStorySheet> {
   final AudioPlayer _previewPlayer = AudioPlayer();
   bool _isPlayingPreview = false;
 
+  Future<void> _pickMedia(ImageSource source) async {
+    try {
+      final XFile? file = await _picker.pickImage(source: source, imageQuality: 80);
+      if (file != null) {
+        setState(() {
+          _selectedImageFile = File(file.path);
+          _activeMode = 'image';
+        });
+      }
+    } catch (e) {
+      _showSnackBar("Gagal mengambil gambar");
+    }
+  }
+
   Future<void> _fetchMusicFromApi(String query) async {
     if (query.trim().isEmpty) return;
-
     setState(() => _isSearchingMusic = true);
 
     try {
       final res = await http.get(
-        Uri.parse(
-            'http://api.ikyyxd.my.id/search/ytplayv3?q=${Uri.encodeComponent(query)}'),
+        Uri.parse('http://api.ikyyxd.my.id/search/ytplayv3?q=${Uri.encodeComponent(query)}'),
       );
 
       if (res.statusCode == 200) {
@@ -2132,8 +2144,7 @@ class _CreateStorySheetState extends State<CreateStorySheet> {
           setState(() {
             _selectedAudioUrl = result['download'];
             _selectedAudioTitle = result['title'];
-            _maxAudioDurationSec =
-                (result['duration'] as num?)?.toDouble() ?? 180.0;
+            _maxAudioDurationSec = (result['duration'] as num?)?.toDouble() ?? 180.0;
             _audioStartSec = 0.0;
           });
 
@@ -2148,23 +2159,9 @@ class _CreateStorySheetState extends State<CreateStorySheet> {
         _showSnackBar("Gagal menghubungi server musik.");
       }
     } catch (e) {
-      debugPrint("Error fetch music: $e");
       _showSnackBar("Terjadi kesalahan koneksi.");
     } finally {
       if (mounted) setState(() => _isSearchingMusic = false);
-    }
-  }
-
-  void _toggleAudioPreview() async {
-    if (_selectedAudioUrl == null) return;
-
-    if (_isPlayingPreview) {
-      await _previewPlayer.stop();
-      setState(() => _isPlayingPreview = false);
-    } else {
-      await _previewPlayer.play(UrlSource(_selectedAudioUrl!));
-      await _previewPlayer.seek(Duration(seconds: _audioStartSec.toInt()));
-      setState(() => _isPlayingPreview = true);
     }
   }
 
@@ -2185,276 +2182,383 @@ class _CreateStorySheetState extends State<CreateStorySheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Container(
-      padding: EdgeInsets.only(
-        top: 16,
-        left: 16,
-        right: 16,
-        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      height: MediaQuery.of(context).size.height * 0.9,
+      decoration: const BoxDecoration(
+        color: Color(0xFF121216),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white24,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            const Text(
-              "Buat Story Teks & Musik",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // 1. INPUT TEKS STORY
-            TextField(
-              controller: _textController,
-              maxLines: 3,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: "Tuliskan sesuatu untuk Story...",
-                hintStyle: const TextStyle(color: Colors.white38),
-                filled: true,
-                fillColor: _selectedBgColor.withOpacity(0.4),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // 2. PILIH WARNA BACKGROUND
-            const Text("Pilih Warna Background:",
-                style: TextStyle(color: Colors.white70, fontSize: 12)),
-            const SizedBox(height: 8),
-            Row(
-              children: _bgColors.map((color) {
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedBgColor = color),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      border: _selectedBgColor == color
-                          ? Border.all(color: Colors.white, width: 2.5)
-                          : null,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 16),
-            const Divider(color: Colors.white12),
-
-            // 3. PENCARIAN MUSIK VIA API
-            const Text("Cari Musik (YouTube Play):",
-                style: TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Row(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
               children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchMusicController,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: "Masukkan judul lagu (Contoh: Duka)",
-                      hintStyle:
-                          const TextStyle(color: Colors.white38, fontSize: 13),
-                      filled: true,
-                      fillColor: Colors.black26,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: BorderSide.none,
-                      ),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.white, size: 26),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                const Expanded(
+                  child: Text(
+                    "Tambah status",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
-                    onSubmitted: (val) => _fetchMusicFromApi(val),
                   ),
                 ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
-                  onPressed: _isSearchingMusic
-                      ? null
-                      : () => _fetchMusicFromApi(_searchMusicController.text),
-                  child: _isSearchingMusic
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2),
-                        )
-                      : const Icon(Icons.search, color: Colors.white, size: 20),
+                const SizedBox(width: 48),
+              ],
+            ),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildActionButton(
+                  icon: Icons.edit_rounded,
+                  label: "Teks",
+                  isActive: _activeMode == 'text' && _selectedImageFile == null,
+                  onTap: () {
+                    setState(() {
+                      _activeMode = 'text';
+                      _selectedImageFile = null;
+                    });
+                  },
+                ),
+                const SizedBox(width: 16),
+                _buildActionButton(
+                  icon: Icons.music_note_rounded,
+                  label: "Musik",
+                  isActive: _selectedAudioUrl != null,
+                  onTap: _showMusicSearchDialog,
+                ),
+                const SizedBox(width: 16),
+                _buildActionButton(
+                  icon: Icons.photo_library_rounded,
+                  label: "Galeri",
+                  isActive: _selectedImageFile != null,
+                  onTap: () => _pickMedia(ImageSource.gallery),
+                ),
+                const SizedBox(width: 16),
+                _buildActionButton(
+                  icon: Icons.camera_alt_rounded,
+                  label: "Kamera",
+                  isActive: false,
+                  onTap: () => _pickMedia(ImageSource.camera),
                 ),
               ],
             ),
-
-            // 4. PREVIEW MUSIK & SLIDER POTONG REFF
-            if (_selectedAudioUrl != null) ...[
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.black38,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: theme.colorScheme.primary.withOpacity(0.4)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.music_note_rounded,
-                            color: theme.colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _selectedAudioTitle ?? "Lagu Terpilih",
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            _isPlayingPreview
-                                ? Icons.pause_circle_filled
-                                : Icons.play_circle_fill,
-                            color: theme.colorScheme.primary,
-                            size: 28,
-                          ),
-                          onPressed: _toggleAudioPreview,
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close,
-                              color: Colors.white38, size: 20),
-                          onPressed: () {
-                            _previewPlayer.stop();
-                            setState(() {
-                              _selectedAudioUrl = null;
-                              _selectedAudioTitle = null;
-                              _isPlayingPreview = false;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          "Detik Mulai (Reff): ${_audioStartSec.toInt()}s",
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 11),
-                        ),
-                        Text(
-                          "Total: ${_maxAudioDurationSec.toInt()}s",
-                          style: const TextStyle(
-                              color: Colors.white38, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                    Slider(
-                      value: _audioStartSec.clamp(0.0, _maxAudioDurationSec),
-                      min: 0.0,
-                      max: _maxAudioDurationSec,
-                      activeColor: theme.colorScheme.primary,
-                      inactiveColor: Colors.white12,
-                      onChanged: (val) {
-                        setState(() => _audioStartSec = val);
-                        if (_isPlayingPreview) {
-                          _previewPlayer.seek(Duration(seconds: val.toInt()));
-                        }
-                      },
-                    ),
-                  ],
-                ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: _selectedImageFile != null ? Colors.black : _selectedBgColor,
+                borderRadius: BorderRadius.circular(20),
+                image: _selectedImageFile != null
+                    ? DecorationImage(
+                        image: FileImage(_selectedImageFile!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
               ),
-            ],
-
-            const SizedBox(height: 20),
-
-            // 5. TOMBOL SUBMIT PUBLIKASI STORY
-            SizedBox(
+              child: Stack(
+                children: [
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: TextField(
+                        controller: _textController,
+                        maxLines: 5,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: _selectedImageFile != null ? 18 : 22,
+                          fontWeight: FontWeight.bold,
+                          shadows: const [
+                            Shadow(blurRadius: 8, color: Colors.black87)
+                          ],
+                        ),
+                        decoration: const InputDecoration(
+                          hintText: "Ketik status...",
+                          hintStyle: TextStyle(color: Colors.white54),
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (_selectedImageFile == null)
+                    Positioned(
+                      bottom: 16,
+                      left: 16,
+                      right: 16,
+                      child: SizedBox(
+                        height: 36,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: _bgColors.map((color) {
+                            return GestureDetector(
+                              onTap: () => setState(() => _selectedBgColor = color),
+                              child: Container(
+                                margin: const EdgeInsets.only(right: 10),
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  shape: BoxShape.circle,
+                                  border: _selectedBgColor == color
+                                      ? Border.all(color: Colors.white, width: 2.5)
+                                      : null,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  if (_selectedAudioTitle != null)
+                    Positioned(
+                      top: 16,
+                      left: 16,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.music_note, color: Colors.pinkAccent, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _selectedAudioTitle!,
+                                style: const TextStyle(color: Colors.white, fontSize: 12),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                _previewPlayer.stop();
+                                setState(() {
+                                  _selectedAudioUrl = null;
+                                  _selectedAudioTitle = null;
+                                  _isPlayingPreview = false;
+                                });
+                              },
+                              child: const Icon(Icons.close, color: Colors.white70, size: 16),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 14,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
+            child: SizedBox(
               width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
+              height: 50,
+              child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                label: const Text(
+                  "BAGIKAN KE STORY",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
                   ),
                 ),
                 onPressed: () {
                   if (_textController.text.trim().isEmpty &&
+                      _selectedImageFile == null &&
                       _selectedAudioUrl == null) {
-                    _showSnackBar("Isi teks story atau pilih lagu!");
+                    _showSnackBar("Isi teks, gambar, atau musik!");
                     return;
                   }
 
                   widget.onSubmit({
-                    'type': 'text',
+                    'type': _selectedImageFile != null ? 'image' : 'text',
                     'text': _textController.text.trim(),
                     'bgColor': '0x${_selectedBgColor.value.toRadixString(16)}',
                     'audioUrl': _selectedAudioUrl,
                     'audioTitle': _selectedAudioTitle,
                     'audioStartSec': _audioStartSec.toInt(),
+                    'imagePath': _selectedImageFile?.path,
                   });
 
                   Navigator.pop(context);
                 },
-                child: const Text(
-                  "PUBLIKASIKAN STORY",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
-}
 
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: isActive ? Theme.of(context).colorScheme.primary : const Color(0xFF2A2B36),
+              shape: BoxShape.circle,
+              border: isActive ? Border.all(color: Colors.white, width: 2) : null,
+            ),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.white60,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMusicSearchDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E1E2C),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Cari & Pasang Musik",
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchMusicController,
+                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          decoration: InputDecoration(
+                            hintText: "Judul lagu (ex: Duka)",
+                            hintStyle: const TextStyle(color: Colors.white38),
+                            filled: true,
+                            fillColor: Colors.black26,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                          onSubmitted: (val) async {
+                            await _fetchMusicFromApi(val);
+                            setModalState(() {});
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () async {
+                          await _fetchMusicFromApi(_searchMusicController.text);
+                          setModalState(() {});
+                          setState(() {});
+                        },
+                        child: _isSearchingMusic
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Icon(Icons.search, color: Colors.white, size: 20),
+                      ),
+                    ],
+                  ),
+                  if (_selectedAudioUrl != null) ...[
+                    const SizedBox(height: 14),
+                    Text(
+                      "Pilih Reff: ${_audioStartSec.toInt()}s",
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                    ),
+                    Slider(
+                      value: _audioStartSec.clamp(0.0, _maxAudioDurationSec),
+                      min: 0.0,
+                      max: _maxAudioDurationSec,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                      onChanged: (val) {
+                        setModalState(() => _audioStartSec = val);
+                        setState(() => _audioStartSec = val);
+                      },
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        minimumSize: const Size(double.infinity, 44),
+                      ),
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text("Gunakan Lagu Ini", style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
 
 class SingleStoryMedia extends StatefulWidget {
   final String url;

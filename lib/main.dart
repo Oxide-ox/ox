@@ -32,10 +32,16 @@ AudioHandler? globalAudioHandler;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-      await Api.loadGh();
+  
+  // 🔥 SOLUSI ANTI-STUCK (ANR): 
+  // Langsung jalankan UI Bootloader agar Android tidak mengira aplikasi freeze.
   runApp(const AppBootloader());
 }
 
+// ============================================================================
+// WIDGET BOOTLOADER (LAYAR LOADING AWAL)
+// Menjalankan proses berat (API & Audio) di latar belakang sambil menampilkan UI
+// ============================================================================
 class AppBootloader extends StatefulWidget {
   const AppBootloader({super.key});
 
@@ -56,6 +62,8 @@ class _AppBootloaderState extends State<AppBootloader> {
   Future<void> _initializeHeavyTasks() async {
     try {
       if (mounted) setState(() => _statusText = "Menyiapkan Audio Engine...");
+      
+      // 1. Init Audio Background
       await JustAudioBackground.init(
         androidNotificationChannelId: 'com.oxide.music.channel.audio',
         androidNotificationChannelName: 'Audio playback',
@@ -64,10 +72,15 @@ class _AppBootloaderState extends State<AppBootloader> {
 
       if (mounted) setState(() => _statusText = "Menghubungkan ke Server (API)...");
       
+      // 2. Load API Backend (Proses yang sebelumnya bikin stuck)
+      await Api.loadGh();
+      
       if (mounted) setState(() => _statusText = "Memuat Tema & Konfigurasi...");
       
+      // 3. Load Theme
       await AppTheme.init();
 
+      // Jika semua sukses, ubah state menjadi ready
       if (mounted) {
         setState(() {
           _isReady = true;
@@ -86,16 +99,17 @@ class _AppBootloaderState extends State<AppBootloader> {
 
   @override
   Widget build(BuildContext context) {
+    // ⏳ Selama _isReady false, tampilkan layar loading sederhana
     if (!_isReady) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
-          backgroundColor: const Color(0xFF0D0D0E),
+          backgroundColor: const Color(0xFF0D0D0E), // Sesuaikan dengan AppTheme.bgDark
           body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const CircularProgressIndicator(color: Color(0xFFE6007E)),
+                const CircularProgressIndicator(color: Color(0xFFE6007E)), // Warna primary Magenta
                 const SizedBox(height: 20),
                 Text(
                   _statusText,
@@ -113,6 +127,7 @@ class _AppBootloaderState extends State<AppBootloader> {
       );
     }
 
+    // ✅ Jika _isReady true, load aplikasi utama beserta semua Provider-nya
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => GameProvider()),
@@ -123,6 +138,9 @@ class _AppBootloaderState extends State<AppBootloader> {
   }
 }
 
+// ============================================================================
+// APLIKASI UTAMA (GATEWAY & ROUTING)
+// ============================================================================
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -139,6 +157,7 @@ class MyApp extends StatelessWidget {
           theme: currentTheme,
           initialRoute: '/',
           
+          // 🎵 GLOBAL MINI PLAYER (Menempel di semua rute)
           builder: (context, child) {
             return Stack(
               children: [
@@ -148,6 +167,7 @@ class MyApp extends StatelessWidget {
             );
           },
 
+          // 🚦 ROUTING / GATEWAY
           onGenerateRoute: (settings) {
             switch (settings.name) {
               case '/':

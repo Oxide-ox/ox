@@ -9,25 +9,22 @@ class GlobalMiniPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: 50, // Posisi dari atas (sesuaikan agar tidak nabrak AppBar)
-      left: 20,
-      right: 80, // Diberi jarak kanan agar tidak menutupi tombol profil/menu
+        return Positioned(
+      top: 55, // Jarak dari atas layar (sesuaikan agar pas di bawah tombol dashboardmu)
+      left: 16,
+      right: 70, // Beri jarak kanan agar tidak menutupi tombol lonceng/profil
       child: Consumer<MusicProvider>(
         builder: (context, provider, child) {
-          if (provider.currentSong == null) return const SizedBox.shrink(); // Sembunyikan jika tidak ada lagu
+          if (provider.currentSong == null) return const SizedBox.shrink();
           
           return Material(
-            color: Colors.transparent, // Penting agar tidak ada background kotak putih
+            color: Colors.transparent,
             child: GestureDetector(
               onTap: () {
-                // Tampilkan Full Player saat di-klik
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: const Color(0xFF0F172A),
-                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(30))),
-                  builder: (context) => const FullPlayerScreen(),
+                // Gunakan PUSH biasa alih-alih BottomSheet
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const FullPlayerScreen()),
                 );
               },
               child: Container(

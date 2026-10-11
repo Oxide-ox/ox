@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'btrapps/.dart';
+import '../btrapps/.dart';
 final baseUrl = Api.api;
 
 class MusicProvider with ChangeNotifier {

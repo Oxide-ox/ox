@@ -32,7 +32,7 @@ AudioHandler? globalAudioHandler;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-      await Api.loadGh();
+      
   runApp(const AppBootloader());
 }
 
@@ -63,6 +63,8 @@ class _AppBootloaderState extends State<AppBootloader> {
       );
 
       if (mounted) setState(() => _statusText = "Menghubungkan ke Server (API)...");
+      
+      await Api.loadGh();
       
       if (mounted) setState(() => _statusText = "Memuat Tema & Konfigurasi...");
       

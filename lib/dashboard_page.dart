@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -32,6 +33,12 @@ import 'anime_home.dart';
 import 'btrapps/.dart';
 import 'app_theme.dart';
 import 'theme_settings_sheet.dart';
+
+// Tambahkan / Sesuaikan import halaman fitur baru jika lokasi filenya berbeda
+// import 'spam_otp_page.dart';
+// import 'main_screen.dart';
+// import 'alight_motion_prem_screen.dart';
+// import 'nf_token_page.dart';
 
 final baseUrl = Api.api;
 
@@ -73,6 +80,9 @@ class _DashboardPageState extends State<DashboardPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
+
+  // Timer untuk update stats real-time
+  Timer? _statsTimer;
 
   late String sessionKey;
   late String username;
@@ -139,6 +149,13 @@ class _DashboardPageState extends State<DashboardPage>
     _fetchDashboardStats();
     _fetchStoriesFromBackend();
     _fetchNews();
+
+    // Timer Polling Otomatis Setiap 5 Detik
+    _statsTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) {
+        _fetchDashboardStats();
+      }
+    });
   }
 
   Future<void> _fetchNews() async {
@@ -278,10 +295,12 @@ class _DashboardPageState extends State<DashboardPage>
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
-          setState(() {
-            onlineUsers = data['onlineUsers'] ?? 0;
-            activeConnections = data['activeConnections'] ?? 0;
-          });
+          if (mounted) {
+            setState(() {
+              onlineUsers = data['onlineUsers'] ?? 0;
+              activeConnections = data['activeConnections'] ?? 0;
+            });
+          }
         }
       }
     } catch (e) {
@@ -376,8 +395,12 @@ class _DashboardPageState extends State<DashboardPage>
           _buildDashboardUserCard(),
           const SizedBox(height: 20),
           _buildHorizontalQuickActions(),
+          const SizedBox(height: 16),
+          _buildFourFeatureGrid(),
           const SizedBox(height: 20),
           _buildKompasNewsCard(),
+          const SizedBox(height: 16),
+          _buildBottomChannelAndTqCards(),
           const SizedBox(height: 20),
         ],
       ),
@@ -906,27 +929,6 @@ class _DashboardPageState extends State<DashboardPage>
           );
         },
       },
-      {
-        "title": "Channel Info",
-        "sub": "Telegram Updates",
-        "badge": "TELEGRAM",
-        "icon": FontAwesomeIcons.telegram,
-        "color": isNeo ? theme.colorScheme.primary : const Color(0xFF0088CC),
-        "onTap": () => _openUrl("https://t.me/informationoxide"),
-      },
-      {
-        "title": "Tq To Team",
-        "sub": "Credits & Respects",
-        "badge": "CREDITS",
-        "icon": Icons.favorite_border_rounded,
-        "color": Colors.pinkAccent,
-        "onTap": () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const TqPage()),
-          );
-        },
-      },
     ];
 
     return Column(
@@ -1186,6 +1188,166 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
+  // WIDGET 4 KOTAK GRID UTAMA DENGAN NAVIGASI FITUR LENGKAP
+  Widget _buildFourFeatureGrid() {
+    final theme = Theme.of(context);
+    final isNeo = themeModeNotifier.value != 0;
+
+    final items = [
+      {
+        "title": "Oxfy",
+        "sub": "Music Premium",
+        "icon": FontAwesomeIcons.spotify,
+        "color": Colors.green,
+        "onTap": () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const MainScreen()),
+          );
+        },
+      },
+      {
+        "title": "Create Netflix",
+        "sub": "NF Token Generator",
+        "icon": Icons.live_tv,
+        "color": Colors.redAccent,
+        "onTap": () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NfTokenPage()),
+          );
+        },
+      },
+      {
+        "title": "Prem Alight Motion",
+        "sub": "Alight Motion Prem",
+        "icon": Icons.auto_awesome_motion,
+        "color": Colors.amber,
+        "onTap": () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AlightMotionPremScreen()),
+          );
+        },
+      },
+      {
+        "title": "Spam OTP",
+        "sub": "Utility Tool",
+        "icon": Icons.security_outlined,
+        "color": Colors.cyan,
+        "onTap": () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SpamOtpPage()),
+          );
+        },
+      },
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: items.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+          childAspectRatio: 1.35,
+        ),
+        itemBuilder: (context, index) {
+          final item = items[index];
+          final Color itemColor = item['color'] as Color;
+
+          return Container(
+            decoration: BoxDecoration(
+              color: isNeo ? itemColor : theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(isNeo ? 8 : 18),
+              border: Border.all(
+                color: isNeo ? Colors.black : itemColor.withOpacity(0.5),
+                width: isNeo ? 3.0 : 1.2,
+              ),
+              boxShadow: isNeo
+                  ? [
+                      const BoxShadow(
+                        color: Colors.black,
+                        blurRadius: 0,
+                        offset: Offset(4, 4),
+                      )
+                    ]
+                  : [
+                      BoxShadow(
+                        color: itemColor.withOpacity(0.15),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(isNeo ? 6 : 16),
+                onTap: item['onTap'] as VoidCallback,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isNeo
+                              ? Colors.white
+                              : itemColor.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                          border: isNeo
+                              ? Border.all(color: Colors.black, width: 1.5)
+                              : null,
+                        ),
+                        child: Icon(
+                          item['icon'] as IconData,
+                          color: isNeo ? Colors.black : itemColor,
+                          size: 20,
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item['title'] as String,
+                            style: TextStyle(
+                              color: isNeo ? Colors.black : Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            item['sub'] as String,
+                            style: TextStyle(
+                              color: isNeo ? Colors.black87 : Colors.white70,
+                              fontSize: 10,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildKompasNewsCard() {
     final theme = Theme.of(context);
     final isNeo = themeModeNotifier.value != 0;
@@ -1401,6 +1563,133 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
+  Widget _buildBottomChannelAndTqCards() {
+    final theme = Theme.of(context);
+    final isNeo = themeModeNotifier.value != 0;
+
+    final extraActions = [
+      {
+        "title": "Channel Info",
+        "sub": "Telegram Updates",
+        "badge": "TELEGRAM",
+        "icon": FontAwesomeIcons.telegram,
+        "color": isNeo ? theme.colorScheme.primary : const Color(0xFF0088CC),
+        "onTap": () => _openUrl("https://t.me/informationoxide"),
+      },
+      {
+        "title": "Tq To Team",
+        "sub": "Credits & Respects",
+        "badge": "CREDITS",
+        "icon": Icons.favorite_border_rounded,
+        "color": Colors.pinkAccent,
+        "onTap": () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const TqPage()),
+          );
+        },
+      },
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: extraActions.map((item) {
+          final Color actionColor = item['color'] as Color;
+
+          return Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: isNeo ? actionColor : theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(isNeo ? 8 : 16),
+                border: Border.all(
+                  color: isNeo ? Colors.black : actionColor.withOpacity(0.5),
+                  width: isNeo ? 3.0 : 1.2,
+                ),
+                boxShadow: isNeo
+                    ? [
+                        const BoxShadow(
+                          color: Colors.black,
+                          blurRadius: 0,
+                          offset: Offset(4, 4),
+                        )
+                      ]
+                    : [
+                        BoxShadow(
+                          color: actionColor.withOpacity(0.15),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(isNeo ? 6 : 14),
+                  onTap: item['onTap'] as VoidCallback,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Icon(
+                              item['icon'] as IconData,
+                              color: isNeo ? Colors.black : actionColor,
+                              size: 20,
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: Colors.black,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                item['badge'] as String,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          item['title'] as String,
+                          style: TextStyle(
+                            color: isNeo ? Colors.black : Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item['sub'] as String,
+                          style: TextStyle(
+                            color: isNeo ? Colors.black87 : Colors.white70,
+                            fontSize: 10,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildCustomDrawer() {
     final theme = Theme.of(context);
     final isNeo = themeModeNotifier.value != 0;
@@ -1604,7 +1893,7 @@ class _DashboardPageState extends State<DashboardPage>
                     await prefs.remove('sessionKey');
                     await prefs.remove('isLoggedIn');
                     await prefs.remove('token');
-                    
+
                     if (!mounted) return;
                     Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(builder: (_) => const LoginPage()),
@@ -1759,7 +2048,7 @@ class _DashboardPageState extends State<DashboardPage>
                     IconButton(
                       icon: Icon(Icons.headset_mic_rounded,
                           color: theme.colorScheme.primary, size: 22),
-                      onPressed: () => _openUrl("https://t.me/SARXXGANTENG"),
+                      onPressed: () => _openUrl("https://t.me/Virzofc"),
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -1831,6 +2120,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   @override
   void dispose() {
+    _statsTimer?.cancel();
     _controller.dispose();
     _menuVideoController?.dispose();
     _newsPageController.dispose();

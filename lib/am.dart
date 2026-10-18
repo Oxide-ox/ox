@@ -169,7 +169,9 @@ class _AlightMotionPremScreenState extends State<AlightMotionPremScreen> {
         ).timeout(const Duration(seconds: 10));
 
         final html = res.body;
-        final regExp = RegExp(r'https?://[^\s"'<>]+', caseSensitive: false);
+        final regExp = RegExp(r'''https?://[^\s"'<>]+''', caseSensitive: false);
+
+
         final matches = regExp.allMatches(html);
 
         for (final match in matches) {

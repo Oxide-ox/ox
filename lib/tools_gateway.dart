@@ -27,7 +27,36 @@ import 'app_theme.dart';
 import 'providers/music_provider.dart';
 import 'screens/main_screen.dart';
 
-class ToolsPage extends StatelessWidget {
+import 'webv/youtube_view.dart';
+import 'webv/tiktok_view.dart';
+import 'webv/instagram_view.dart';
+import 'webv/facebook_view.dart';
+import 'webv/netflix_view.dart';
+import 'webv/chrome_view.dart';
+import 'webv/crazygames_view.dart';
+import 'webv/anime_view.dart';
+
+class ToolItem {
+  final String title;
+  final String subtitle;
+  final String category;
+  final IconData icon;
+  final Color iconColor;
+  final String? statusBadge;
+  final Widget Function(BuildContext) builder;
+
+  ToolItem({
+    required this.title,
+    required this.subtitle,
+    required this.category,
+    required this.icon,
+    required this.iconColor,
+    this.statusBadge,
+    required this.builder,
+  });
+}
+
+class ToolsPage extends StatefulWidget {
   final String username;
   final String sessionKey;
   final String userRole;
@@ -42,100 +71,487 @@ class ToolsPage extends StatelessWidget {
   });
 
   @override
+  State<ToolsPage> createState() => _ToolsPageState();
+}
+
+class _ToolsPageState extends State<ToolsPage> {
+  String _selectedCategory = 'ALL';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  final List<String> _categories = [
+    'ALL',
+    'SOCIAL MEDIA',
+    'STREAMING',
+    'NETWORK',
+    'UTILITIES',
+    'OSINT',
+    'ENTERTAINMENT',
+    'ALL IN ONE',
+  ];
+
+  late final List<ToolItem> _tools = [
+    // --- SOCIAL MEDIA MODULES ---
+    ToolItem(
+      title: 'TikTok',
+      subtitle: 'Platform TikTok',
+      category: 'SOCIAL MEDIA',
+      icon: Icons.music_note_rounded,
+      iconColor: Colors.cyanAccent,
+      statusBadge: 'LIVE',
+      builder: (_) => const TiktokView(),
+    ),
+    ToolItem(
+      title: 'OXGram',
+      subtitle: 'Feed & Direct Message Instagram',
+      category: 'SOCIAL MEDIA',
+      icon: Icons.camera_alt_rounded,
+      iconColor: Colors.pinkAccent,
+      statusBadge: 'LIVE',
+      builder: (_) => const InstagramView(),
+    ),
+    ToolItem(
+      title: 'OXBook',
+      subtitle: 'Komunitas Facebook',
+      category: 'SOCIAL MEDIA',
+      icon: Icons.facebook_rounded,
+      iconColor: Colors.blueAccent,
+      statusBadge: 'LIVE',
+      builder: (_) => const FacebookView(),
+    ),
+
+    // --- STREAMING MODULES ---
+    ToolItem(
+      title: 'OXTube',
+      subtitle: 'Nonton & Cari Video YouTube',
+      category: 'STREAMING',
+      icon: Icons.ondemand_video_rounded,
+      iconColor: Colors.redAccent,
+      statusBadge: 'ONLINE',
+      builder: (_) => const YoutubeView(),
+    ),
+    ToolItem(
+      title: 'OXMovies',
+      subtitle: 'Streaming Film & Series Netflix',
+      category: 'STREAMING',
+      icon: Icons.movie_rounded,
+      iconColor: Colors.red,
+      statusBadge: 'LIVE',
+      builder: (_) => const NetflixView(),
+    ),
+    ToolItem(
+      title: 'OXAnime',
+      subtitle: 'Anime Center Stream',
+      category: 'STREAMING',
+      icon: Icons.tv_rounded,
+      iconColor: Colors.lightBlueAccent,
+      statusBadge: 'ONLINE',
+      builder: (_) => const AnimeView(),
+    ),
+
+    // --- NETWORK & DDOS MODULES ---
+    ToolItem(
+      title: 'Attack Panel',
+      subtitle: 'DDoS Attack Panel & Server Control',
+      category: 'NETWORK',
+      icon: Icons.flash_on_rounded,
+      iconColor: Colors.amber,
+      statusBadge: 'ONLINE',
+      builder: (_) => AttackPanel(
+        sessionKey: widget.sessionKey,
+        listDoos: widget.listDoos,
+      ),
+    ),
+    ToolItem(
+      title: 'Manage Server',
+      subtitle: 'DNS & Kelola Server Tunnel',
+      category: 'NETWORK',
+      icon: Icons.dns_rounded,
+      iconColor: Colors.blueAccent,
+      builder: (_) => ManageServerPage(keyToken: widget.sessionKey),
+    ),
+    ToolItem(
+      title: 'Spyware',
+      subtitle: 'Monitoring & Pelacakan Sistem',
+      category: 'NETWORK',
+      icon: Icons.security_rounded,
+      iconColor: Colors.redAccent,
+      builder: (_) => SpywarePage(
+        sessionKey: widget.sessionKey,
+        userRole: widget.userRole,
+        username: widget.username,
+      ),
+    ),
+    ToolItem(
+      title: 'TG Spam',
+      subtitle: 'Otomasi Telegram Bot Spam',
+      category: 'NETWORK',
+      icon: Icons.telegram_rounded,
+      iconColor: Colors.lightBlue,
+      builder: (_) => TelegramSpamPage(sessionKey: widget.sessionKey),
+    ),
+    ToolItem(
+      title: 'Spam NGL',
+      subtitle: 'Otomasi Pesan NGL Link',
+      category: 'NETWORK',
+      icon: Icons.newspaper_outlined,
+      iconColor: Colors.orangeAccent,
+      builder: (_) => NglPage(),
+    ),
+    ToolItem(
+      title: 'WiFi Killer (Internal)',
+      subtitle: 'Internal Network Tool',
+      category: 'NETWORK',
+      icon: Icons.wifi_off_rounded,
+      iconColor: Colors.deepOrange,
+      builder: (_) => WifiKillerPage(),
+    ),
+    ToolItem(
+      title: 'WiFi Killer (External)',
+      subtitle: 'External Network Manager',
+      category: 'NETWORK',
+      icon: Icons.router_rounded,
+      iconColor: Colors.indigoAccent,
+      builder: (_) => WifiInternalPage(sessionKey: widget.sessionKey),
+    ),
+
+    // --- OSINT MODULES ---
+    ToolItem(
+      title: 'NIK Detail',
+      subtitle: 'Pengecekan data NIK kependudukan',
+      category: 'OSINT',
+      icon: Icons.badge_rounded,
+      iconColor: Colors.amberAccent,
+      builder: (_) => const NikCheckerPage(),
+    ),
+    ToolItem(
+      title: 'Domain OSINT',
+      subtitle: 'Analisis Whois & DNS Domain',
+      category: 'OSINT',
+      icon: Icons.domain_rounded,
+      iconColor: Colors.tealAccent,
+      builder: (_) => const DomainOsintPage(),
+    ),
+    ToolItem(
+      title: 'Phone Lookup',
+      subtitle: 'Pencarian detail nomor telepon',
+      category: 'OSINT',
+      icon: Icons.person_search_rounded,
+      iconColor: Colors.lightGreenAccent,
+      builder: (_) => const PhoneLookupPage(),
+    ),
+
+    // --- UTILITIES MODULES ---
+    ToolItem(
+      title: 'Chroom',
+      subtitle: 'Browser Penjelajah Web Cepat',
+      category: 'UTILITIES',
+      icon: Icons.language_rounded,
+      iconColor: Colors.greenAccent,
+      statusBadge: 'LIVE',
+      builder: (_) => const ChromeView(),
+    ),
+    ToolItem(
+      title: 'Mini Game',
+      subtitle: 'Arena Hiburan',
+      category: 'UTILITIES',
+      icon: Icons.sports_esports_rounded,
+      iconColor: Colors.purpleAccent,
+      statusBadge: 'LIVE',
+      builder: (_) => const CrazygamesView(),
+    ),
+    ToolItem(
+      title: 'TikTok Downloader',
+      subtitle: 'Download video TikTok tanpa WM',
+      category: 'UTILITIES',
+      icon: Icons.video_library_rounded,
+      iconColor: Colors.pinkAccent,
+      builder: (_) => const TiktokDownloaderPage(),
+    ),
+    ToolItem(
+      title: 'Instagram Downloader',
+      subtitle: 'Download Reels & Media IG',
+      category: 'UTILITIES',
+      icon: Icons.camera_alt_outlined,
+      iconColor: Colors.purpleAccent,
+      builder: (_) => const InstagramDownloaderPage(),
+    ),
+    ToolItem(
+      title: 'QR Generator',
+      subtitle: 'Pembuat kode QR kustom cepat',
+      category: 'UTILITIES',
+      icon: Icons.qr_code_2_rounded,
+      iconColor: Colors.cyan,
+      builder: (_) => const QrGeneratorPage(),
+    ),
+    ToolItem(
+      title: 'Create Html Payment',
+      subtitle: 'Buat Halaman Invoice HTML',
+      category: 'UTILITIES',
+      icon: Icons.web_rounded,
+      iconColor: Colors.greenAccent,
+      builder: (_) => const CreatePaymentHtmlPage(),
+    ),
+    ToolItem(
+      title: 'Alight Motion Prem',
+      subtitle: 'Akses Fitur Alight Motion Pro',
+      category: 'UTILITIES',
+      icon: Icons.auto_awesome_motion_rounded,
+      iconColor: Colors.lightBlue,
+      builder: (_) => const AlightMotionPremScreen(),
+    ),
+
+    // --- ENTERTAINMENT & MUSIC ---
+    ToolItem(
+      title: 'Oxfy',
+      subtitle: ' Oxide music',
+      category: 'ENTERTAINMENT',
+      icon: Icons.music_note_rounded,
+      iconColor: Colors.cyanAccent,
+      builder: (_) => const MainScreen(),
+    ),
+
+    // --- ALL IN ONE MODULES ---
+    ToolItem(
+      title: 'NF Token Generator',
+      subtitle: 'Generator Token Netflix Premium',
+      category: 'ALL IN ONE',
+      icon: Icons.live_tv_rounded,
+      iconColor: Colors.red,
+      builder: (_) => const NfTokenPage(),
+    ),
+  ];
+
+  List<ToolItem> get _filteredTools {
+    return _tools.where((tool) {
+      final matchesCategory =
+          _selectedCategory == 'ALL' || tool.category == _selectedCategory;
+      final matchesQuery = tool.title
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()) ||
+          tool.subtitle.toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesCategory && matchesQuery;
+    }).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isNeo = themeModeNotifier.value != 0;
-    final isLight = theme.brightness == Brightness.light;
-    final textColor = isLight ? Colors.black87 : Colors.white;
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(context),
-                    const SizedBox(height: 24),
-                    _buildHeroCard(context),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Icon(Icons.widgets_outlined,
-                            color: theme.colorScheme.primary, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          "SYSTEM MODULES",
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            // SEARCH BAR + STAR ICON
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        borderRadius: BorderRadius.circular(isNeo ? 8 : 16),
+                        border: Border.all(
+                          color: isNeo
+                              ? Colors.black
+                              : theme.colorScheme.primary.withOpacity(0.5),
+                          width: isNeo ? 2 : 1.5,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (val) => setState(() => _searchQuery = val),
+                        style: TextStyle(
+                          color: theme.brightness == Brightness.light
+                              ? Colors.black87
+                              : Colors.white,
+                          fontSize: 14,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Cari tools...',
+                          hintStyle: TextStyle(
+                            color: theme.brightness == Brightness.light
+                                ? Colors.black45
+                                : Colors.white54,
+                            fontSize: 14,
                           ),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: theme.colorScheme.primary,
+                            size: 20,
+                          ),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: Icon(
+                                    Icons.clear,
+                                    color: theme.brightness == Brightness.light
+                                        ? Colors.black54
+                                        : Colors.white54,
+                                    size: 18,
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() => _searchQuery = '');
+                                  },
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 12),
                         ),
-                      ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      childAspectRatio: 1.1,
-                      children: [
-                        _buildGothicCard(
-                          context: context,
-                          icon: Icons.flash_on,
-                          title: "DDoS Tools",
-                          subtitle: "Attack & Server",
-                          onTap: () => _showDDoSTools(context),
-                        ),
-                        _buildGothicCard(
-                          context: context,
-                          icon: Icons.wifi_tethering,
-                          title: "Network",
-                          subtitle: "WiFi & Spam",
-                          onTap: () => _showNetworkTools(context),
-                        ),
-                        _buildGothicCard(
-                          context: context,
-                          icon: Icons.radar,
-                          title: "OSINT",
-                          subtitle: "Investigation",
-                          onTap: () => _showOSINTTools(context),
-                        ),
-                        _buildGothicCard(
-                          context: context,
-                          icon: Icons.cloud_download_outlined,
-                          title: "Downloader",
-                          subtitle: "Social Media",
-                          onTap: () => _showDownloaderTools(context),
-                        ),
-                        _buildGothicCard(
-                          context: context,
-                          icon: Icons.precision_manufacturing_outlined,
-                          title: "Utilities",
-                          subtitle: "Extra Tools",
-                          onTap: () => _showUtilityTools(context),
-                        ),
-                        _buildGothicCard(
-                          context: context,
-                          icon: Icons.movie_creation_outlined,
-                          title: "Streaming",
-                          subtitle: "Nonton & Hiburan",
-                          onTap: () => _showStreamingTools(context),
-                        ),
-                      ],
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    height: 48,
+                    width: 48,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      borderRadius: BorderRadius.circular(isNeo ? 8 : 16),
+                      border: Border.all(
+                        color: isNeo
+                            ? Colors.black
+                            : theme.colorScheme.primary.withOpacity(0.5),
+                        width: isNeo ? 2 : 1.5,
+                      ),
                     ),
-                  ],
-                ),
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.star_outline_rounded,
+                        color: theme.colorScheme.primary,
+                      ),
+                      onPressed: () {},
+                    ),
+                  ),
+                ],
               ),
+            ),
+            const SizedBox(height: 14),
+
+            // HORIZONTAL CATEGORY CHIPS
+            SizedBox(
+              height: 38,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _categories.length,
+                itemBuilder: (context, index) {
+                  final category = _categories[index];
+                  final isSelected = _selectedCategory == category;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedCategory = category),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(isNeo ? 6 : 20),
+                          border: Border.all(
+                            color: isSelected
+                                ? theme.colorScheme.primary
+                                : (isNeo
+                                    ? Colors.black
+                                    : theme.colorScheme.primary
+                                        .withOpacity(0.3)),
+                            width: isNeo ? 2 : 1.5,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: theme.colorScheme.primary
+                                        .withOpacity(0.4),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  )
+                                ]
+                              : [],
+                        ),
+                        child: Row(
+                          children: [
+                            if (category == 'ALL') ...[
+                              Icon(
+                                Icons.grid_view_rounded,
+                                size: 14,
+                                color: isSelected ? Colors.white : theme.colorScheme.primary,
+                              ),
+                              const SizedBox(width: 6),
+                            ],
+                            Text(
+                              category,
+                              style: TextStyle(
+                                color: isSelected
+                                    ? Colors.white
+                                    : (theme.brightness == Brightness.light
+                                        ? Colors.black87
+                                        : Colors.white70),
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // GRID VIEW TOOLS
+            Expanded(
+              child: _filteredTools.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.search_off_rounded,
+                            size: 48,
+                            color: theme.colorScheme.primary.withOpacity(0.4),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Tools tidak ditemukan',
+                            style: TextStyle(
+                              color: theme.brightness == Brightness.light
+                                  ? Colors.black54
+                                  : Colors.white54,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : GridView.builder(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
+                      physics: const BouncingScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 14,
+                        mainAxisSpacing: 14,
+                        childAspectRatio: 0.95,
+                      ),
+                      itemCount: _filteredTools.length,
+                      itemBuilder: (context, index) {
+                        final tool = _filteredTools[index];
+                        return _buildToolCard(context, tool);
+                      },
+                    ),
             ),
           ],
         ),
@@ -143,208 +559,36 @@ class ToolsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildToolCard(BuildContext context, ToolItem tool) {
     final theme = Theme.of(context);
     final isNeo = themeModeNotifier.value != 0;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(isNeo ? 8 : 20),
-        border: Border.all(
-          color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.5),
-          width: isNeo ? 3 : 1,
-        ),
-        image: const DecorationImage(
-          image: NetworkImage('https://smail.my.id/cloud/FHoXwjmX1'),
-          fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(
-            Color(0xCC000000),
-            BlendMode.darken,
-          ),
-        ),
-        boxShadow: isNeo
-            ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(4, 4))]
-            : [
-                BoxShadow(
-                  color: theme.colorScheme.primary.withOpacity(0.2),
-                  blurRadius: 15,
-                  spreadRadius: 1,
-                ),
-              ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: theme.colorScheme.primary,
-              border: isNeo ? Border.all(color: Colors.black, width: 2) : null,
-            ),
-            child: const Icon(Icons.security, color: Colors.white, size: 26),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  username.toUpperCase(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  "ROLE: $userRole",
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary,
-              borderRadius: BorderRadius.circular(isNeo ? 2 : 12),
-              border: isNeo ? Border.all(color: Colors.black, width: 1.5) : null,
-            ),
-            child: Row(
-              children: const [
-                CircleAvatar(radius: 4, backgroundColor: Colors.white),
-                SizedBox(width: 6),
-                Text(
-                  "ONLINE",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHeroCard(BuildContext context) {
-    final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
+    final isLight = theme.brightness == Brightness.light;
 
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => const AiChatPage(),
-          ),
+          MaterialPageRoute(builder: (ctx) => tool.builder(ctx)),
         );
       },
       child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(isNeo ? 8 : 24),
-          border: Border.all(
-            color: isNeo ? Colors.black : theme.colorScheme.primary,
-            width: isNeo ? 3 : 1.5,
-          ),
-          boxShadow: isNeo
-              ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(5, 5))]
-              : [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.3),
-                    blurRadius: 20,
-                    spreadRadius: 2,
-                  ),
-                ],
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "AI ASSISTANT",
-                    style: TextStyle(
-                      color: theme.colorScheme.primary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "Tanya AI Pintar",
-                    style: TextStyle(
-                      color: theme.brightness == Brightness.light ? Colors.black87 : Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Sistem kecerdasan buatan siap membantu analisis & otomasi.",
-                    style: TextStyle(
-                      color: theme.brightness == Brightness.light ? Colors.black54 : Colors.white70,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.primary,
-                border: isNeo ? Border.all(color: Colors.black, width: 2) : null,
-              ),
-              child: const Icon(Icons.smart_toy_outlined, color: Colors.white, size: 30),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGothicCard({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
-    final isLight = theme.brightness == Brightness.light;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(isNeo ? 8 : 20),
           border: Border.all(
-            color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.4),
-            width: isNeo ? 3 : 1,
+            color: isNeo
+                ? Colors.black
+                : theme.colorScheme.primary.withOpacity(0.4),
+            width: isNeo ? 2.5 : 1.5,
           ),
           boxShadow: isNeo
-              ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(4, 4))]
+              ? [
+                  const BoxShadow(
+                    color: Colors.black,
+                    blurRadius: 0,
+                    offset: Offset(3, 3),
+                  )
+                ]
               : [
                   BoxShadow(
                     color: theme.colorScheme.primary.withOpacity(0.15),
@@ -353,523 +597,107 @@ class ToolsPage extends StatelessWidget {
                   ),
                 ],
         ),
+        padding: const EdgeInsets.all(12),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: theme.scaffoldBackgroundColor,
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.6),
-                  width: isNeo ? 1.5 : 1,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: tool.iconColor.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isNeo ? Colors.black : tool.iconColor.withOpacity(0.4),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(tool.icon, color: tool.iconColor, size: 22),
                 ),
-              ),
-              child: Icon(icon, color: theme.colorScheme.primary, size: 22),
+                if (tool.statusBadge != null)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.greenAccent.withOpacity(0.8),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Colors.greenAccent,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          tool.statusBadge!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const Spacer(),
             Text(
-              title,
+              tool.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: isLight ? Colors.black87 : Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
             Text(
-              subtitle,
+              tool.subtitle,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isLight ? Colors.black54 : Colors.white54,
-                fontSize: 11,
+                color: isLight ? Colors.black54 : Colors.white60,
+                fontSize: 10,
+                height: 1.2,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDDoSTools(BuildContext context) {
-    _showGothicBottomSheet(
-      context: context,
-      title: "DDoS Tools",
-      icon: Icons.flash_on,
-      children: [
-        _buildToolOption(
-          context: context,
-          icon: Icons.flash_on,
-          label: "Attack Panel",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => AttackPanel(
-                  sessionKey: sessionKey,
-                  listDoos: listDoos,
-                ),
-              ),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.dns,
-          label: "Manage Server",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ManageServerPage(keyToken: sessionKey),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  void _showNetworkTools(BuildContext context) {
-    _showGothicBottomSheet(
-      context: context,
-      title: "Network Tools",
-      icon: Icons.wifi_tethering,
-      children: [
-        _buildToolOption(
-          context: context,
-          icon: Icons.security,
-          label: "Spyware",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => SpywarePage(
-                  sessionKey: sessionKey,
-                  userRole: userRole,
-                  username: username,
-                ),
-              ),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.telegram,
-          label: "TG Spam",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => TelegramSpamPage(sessionKey: sessionKey),
-              ),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.newspaper_outlined,
-          label: "Spam NGL",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => NglPage()),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.wifi_off,
-          label: "WiFi Killer (Internal)",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => WifiKillerPage()),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.router,
-          label: "WiFi Killer (External)",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => WifiInternalPage(sessionKey: sessionKey),
-              ),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  void _showOSINTTools(BuildContext context) {
-    _showGothicBottomSheet(
-      context: context,
-      title: "OSINT Tools",
-      icon: Icons.radar,
-      children: [
-        _buildToolOption(
-          context: context,
-          icon: Icons.badge,
-          label: "NIK Detail",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NikCheckerPage()),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.domain,
-          label: "Domain OSINT",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const DomainOsintPage()),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.person_search,
-          label: "Phone Lookup",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PhoneLookupPage()),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.email,
-          label: "Email OSINT",
-          onTap: () => _showComingSoon(context),
-        ),
-      ],
-    );
-  }
-
-  void _showDownloaderTools(BuildContext context) {
-    _showGothicBottomSheet(
-      context: context,
-      title: "Media Downloader",
-      icon: Icons.cloud_download_outlined,
-      children: [
-        _buildToolOption(
-          context: context,
-          icon: Icons.video_library,
-          label: "TikTok Downloader",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const TiktokDownloaderPage()),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.music_note,
-          label: "Music Player",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const MainScreen()),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.ondemand_video,
-          label: "YouTube Player",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const HomeScreen()),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.camera_alt,
-          label: "Instagram Downloader",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const InstagramDownloaderPage()),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  void _showUtilityTools(BuildContext context) {
-    _showGothicBottomSheet(
-      context: context,
-      title: "Utility Tools",
-      icon: Icons.precision_manufacturing_outlined,
-      children: [
-        _buildToolOption(
-          context: context,
-          icon: Icons.qr_code,
-          label: "QR Generator",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const QrGeneratorPage()),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.web,
-          label: "Create Html Payment",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const CreatePaymentHtmlPage()),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.auto_awesome_motion,
-          label: "Alight Motion Prem",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AlightMotionPremScreen()),
-            );
-          },
-        ),
-         _buildToolOption(
-          context: context,
-          icon: Icons.live_tv,
-          label: "NF Token Generator",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NfTokenPage()),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  void _showStreamingTools(BuildContext context) {
-    _showGothicBottomSheet(
-      context: context,
-      title: "Streaming & Hiburan",
-      icon: Icons.movie_creation_outlined,
-      children: [
-        _buildToolOption(
-          context: context,
-          icon: Icons.movie_filter,
-          label: "Anime Stream",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const HomeAnimePage()),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.camera_alt,
-          label: "Instagram Login",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const InstagramLoginPage()),
-            );
-          },
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.theaters,
-          label: "Drama China (Drachin)",
-          onTap: () => _showComingSoon(context),
-        ),
-        _buildToolOption(
-          context: context,
-          icon: Icons.live_tv,
-          label: "Movies & Series",
-          onTap: () {
-            Navigator.pop(context);
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const NetflixMovieApp()),
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  void _showGothicBottomSheet({
-    required BuildContext context,
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.65,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(isNeo ? 12 : 30),
-            topRight: Radius.circular(isNeo ? 12 : 30),
-          ),
-          border: Border.all(
-            color: isNeo ? Colors.black : theme.colorScheme.primary,
-            width: isNeo ? 3 : 1.5,
-          ),
-        ),
-        child: Column(
-          children: [
+            const Spacer(),
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: theme.colorScheme.primary,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(isNeo ? 8 : 28),
-                  topRight: Radius.circular(isNeo ? 8 : 28),
+                color: theme.scaffoldBackgroundColor,
+                borderRadius: BorderRadius.circular(isNeo ? 4 : 8),
+                border: Border.all(
+                  color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                  width: 1,
                 ),
-                border: isNeo
-                    ? const Border(bottom: BorderSide(color: Colors.black, width: 2.5))
-                    : null,
               ),
-              child: Row(
-                children: [
-                  Icon(icon, color: Colors.white, size: 26),
-                  const SizedBox(width: 12),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: SingleChildScrollView(
-                  child: Column(children: children),
+              child: Text(
+                tool.category,
+                style: TextStyle(
+                  color: theme.colorScheme.primary,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
                 ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildToolOption({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
-    final isLight = theme.brightness == Brightness.light;
-
-    return Card(
-      color: theme.scaffoldBackgroundColor,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(isNeo ? 6 : 16),
-        side: BorderSide(
-          color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.4),
-          width: isNeo ? 2 : 1,
-        ),
-      ),
-      child: ListTile(
-        leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.15),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.5),
-            ),
-          ),
-          child: Icon(icon, color: theme.colorScheme.primary, size: 20),
-        ),
-        title: Text(
-          label,
-          style: TextStyle(
-            color: isLight ? Colors.black87 : Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        trailing: Icon(Icons.arrow_forward_ios,
-            color: theme.colorScheme.primary, size: 14),
-        onTap: onTap,
-      ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context) {
-    final theme = Theme.of(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: const [
-            Icon(Icons.hourglass_top, color: Colors.white),
-            SizedBox(width: 8),
-            Text(
-              'Feature Coming Soon!',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: theme.colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: const Duration(seconds: 2),
       ),
     );
   }

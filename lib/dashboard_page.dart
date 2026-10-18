@@ -39,7 +39,6 @@ import 'nftoken_page.dart';
 import 'am.dart';
 import 'spam_page.dart';
 
-
 final baseUrl = Api.api;
 
 class DashboardPage extends StatefulWidget {
@@ -55,6 +54,7 @@ class DashboardPage extends StatefulWidget {
   final List<Map<String, dynamic>> listGb;
   final List<Map<String, dynamic>> listDoos;
   final List<dynamic> news;
+  final bool isGmailLinked;
 
   const DashboardPage({
     super.key,
@@ -70,6 +70,7 @@ class DashboardPage extends StatefulWidget {
     required this.listDoos,
     required this.sessionKey,
     required this.news,
+    this.isGmailLinked = false,
   });
 
   @override
@@ -81,7 +82,7 @@ class _DashboardPageState extends State<DashboardPage>
   late AnimationController _controller;
   late Animation<double> _animation;
 
-  // Timer untuk update stats real-time
+  // Timer untuk mengirim heartbeat dan fetch stats
   Timer? _statsTimer;
 
   late String sessionKey;
@@ -102,6 +103,8 @@ class _DashboardPageState extends State<DashboardPage>
 
   int onlineUsers = 0;
   int activeConnections = 0;
+
+  bool _isGmailLinkedState = false;
 
   final PageController _newsPageController = PageController();
   int _currentNewsIndex = 0;
@@ -135,6 +138,7 @@ class _DashboardPageState extends State<DashboardPage>
     listGb = widget.listGb;
     listDoos = widget.listDoos;
     newsList = widget.news;
+    _isGmailLinkedState = widget.isGmailLinked;
 
     _controller = AnimationController(
       duration: const Duration(milliseconds: 450),
@@ -146,23 +150,83 @@ class _DashboardPageState extends State<DashboardPage>
     _selectedPage = _buildMainDashboardContent();
     _loadProfileImage();
     _initMenuVideo();
-    _fetchDashboardStats();
     _fetchStoriesFromBackend();
     _fetchNews();
 
-    // Timer Polling Otomatis Setiap 5 Detik
-    _statsTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    // Kirim Heartbeat pertama kali saat halaman dirender
+    _sendHeartbeatAndFetchStats();
+
+    // Timer Ping Heartbeat Setiap 30 Detik (Sangat Enteng)
+    _statsTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (mounted) {
-        _fetchDashboardStats();
+        _sendHeartbeatAndFetchStats();
+      }
+    });
+
+    // Tampilkan Pop-Up jika Gmail belum terikat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isGmailLinkedState) {
+        _showRequireGmailDialog();
       }
     });
   }
 
+  // FUNGSI SEND HEARTBEAT & FETCH STATS REAL-TIME
+  Future<void> _sendHeartbeatAndFetchStats() async {
+    try {
+      // 1. Kirim sinyal Heartbeat (Ping) ke backend
+      http.post(
+        Uri.parse('$baseUrl/api/heartbeat'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': username}),
+      ).catchError((_) => http.Response('', 500));
+
+      // 2. Minta data statistik terbaru dari server
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/dashboard-stats?username=$username'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && mounted) {
+          setState(() {
+            onlineUsers = data['onlineUsers'] ?? 0;
+            activeConnections = data['activeConnections'] ?? 0;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error heartbeat / fetch stats: $e");
+    }
+  }
+
+  void _showRequireGmailDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return _GmailLinkDialog(
+          username: username,
+          onSuccess: () {
+            setState(() {
+              _isGmailLinkedState = true;
+            });
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("✅ Gmail berhasil terhubung ke akun Anda!"),
+                backgroundColor: Colors.green,
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _fetchNews() async {
     try {
-      final res = await http.get(
-        Uri.parse('$baseUrl/api/news'),
-      );
+      final res = await http.get(Uri.parse('$baseUrl/api/news'));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         List<dynamic> parsedList = [];
@@ -285,26 +349,6 @@ class _DashboardPageState extends State<DashboardPage>
           _profileImage = File(imagePath);
         });
       }
-    }
-  }
-
-  Future<void> _fetchDashboardStats() async {
-    try {
-      final response = await http
-          .get(Uri.parse('${Api.api}/api/dashboard-stats?username=$username'));
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] == true) {
-          if (mounted) {
-            setState(() {
-              onlineUsers = data['onlineUsers'] ?? 0;
-              activeConnections = data['activeConnections'] ?? 0;
-            });
-          }
-        }
-      }
-    } catch (e) {
-      debugPrint("Error fetch stats: $e");
     }
   }
 
@@ -810,31 +854,45 @@ class _DashboardPageState extends State<DashboardPage>
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: isNeo
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.primary.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(isNeo ? 2 : 6),
-                          border: Border.all(
-                            color: isNeo
-                                ? Colors.black
-                                : theme.colorScheme.primary.withOpacity(0.4),
-                            width: isNeo ? 1.5 : 1.0,
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: isNeo
+                                  ? theme.colorScheme.primary
+                                  : theme.colorScheme.primary.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(isNeo ? 2 : 6),
+                              border: Border.all(
+                                color: isNeo
+                                    ? Colors.black
+                                    : theme.colorScheme.primary.withOpacity(0.4),
+                                width: isNeo ? 1.5 : 1.0,
+                              ),
+                            ),
+                            child: Text(
+                              role.toUpperCase(),
+                              style: TextStyle(
+                                color: isNeo
+                                    ? Colors.black
+                                    : theme.colorScheme.primary,
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          role.toUpperCase(),
-                          style: TextStyle(
-                            color: isNeo
-                                ? Colors.black
-                                : theme.colorScheme.primary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                          const SizedBox(width: 8),
+                          Icon(
+                            _isGmailLinkedState
+                                ? Icons.verified_rounded
+                                : Icons.gpp_maybe_rounded,
+                            color: _isGmailLinkedState
+                                ? Colors.greenAccent
+                                : Colors.orangeAccent,
+                            size: 18,
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
@@ -1188,7 +1246,6 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
-  // WIDGET 4 KOTAK GRID UTAMA DENGAN NAVIGASI FITUR LENGKAP
   Widget _buildFourFeatureGrid() {
     final theme = Theme.of(context);
     final isNeo = themeModeNotifier.value != 0;
@@ -2126,6 +2183,289 @@ class _DashboardPageState extends State<DashboardPage>
     _newsPageController.dispose();
     _quickActionPageController.dispose();
     super.dispose();
+  }
+}
+
+// POP-UP DIALOG UNTUK MANDATORI VERIFIKASI GMAIL (1 USER = 1 GMAIL)
+class _GmailLinkDialog extends StatefulWidget {
+  final String username;
+  final VoidCallback onSuccess;
+
+  const _GmailLinkDialog({
+    required this.username,
+    required this.onSuccess,
+  });
+
+  @override
+  State<_GmailLinkDialog> createState() => _GmailLinkDialogState();
+}
+
+class _GmailLinkDialogState extends State<_GmailLinkDialog> {
+  final _emailController = TextEditingController();
+  final _otpController = TextEditingController();
+
+  bool _isOtpSent = false;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  bool get _isLight => Theme.of(context).brightness == Brightness.light;
+  Color get _textColor => _isLight ? Colors.black87 : Colors.white;
+  Color get _subTextColor => _isLight ? Colors.black54 : Colors.white70;
+  bool get _isNeo => themeModeNotifier.value != 0;
+
+  Future<void> _sendOtp() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.toLowerCase().endsWith('@gmail.com')) {
+      setState(() => _errorMessage = "Masukkan alamat @gmail.com yang valid!");
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/auth/send-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': widget.username,
+          'email': email,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+      if (data['success'] == true) {
+        setState(() {
+          _isOtpSent = true;
+        });
+      } else {
+        setState(() => _errorMessage = data['message'] ?? "Gagal mengirim OTP.");
+      }
+    } catch (_) {
+      setState(() => _errorMessage = "Gagal terhubung ke server backend.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _verifyOtp() async {
+    final otp = _otpController.text.trim();
+    if (otp.length < 6) {
+      setState(() => _errorMessage = "Masukkan 6 digit kode OTP!");
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/auth/verify-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': widget.username,
+          'email': _emailController.text.trim(),
+          'otp': otp,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+      if (data['success'] == true) {
+        widget.onSuccess();
+      } else {
+        setState(() => _errorMessage = data['message'] ?? "Kode OTP tidak valid.");
+      }
+    } catch (_) {
+      setState(() => _errorMessage = "Terjadi kesalahan saat memverifikasi.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _otpController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return PopScope(
+      canPop: false,
+      child: AlertDialog(
+        backgroundColor: theme.colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
+          side: BorderSide(
+            color: _isNeo ? Colors.black : theme.colorScheme.primary,
+            width: _isNeo ? 3 : 1.5,
+          ),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.mark_email_read_rounded, color: theme.colorScheme.primary, size: 26),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                "VERIFIKASI GMAIL",
+                style: TextStyle(
+                  color: _textColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Setiap akun wajib menghubungkan 1 akun Gmail unik untuk fitur pemulihan kata sandi (Forgot PW).",
+                style: TextStyle(color: _subTextColor, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              if (!_isOtpSent) ...[
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: TextStyle(color: _textColor, fontSize: 14),
+                  decoration: InputDecoration(
+                    labelText: "Alamat Gmail",
+                    hintText: "contoh@gmail.com",
+                    labelStyle: TextStyle(color: _subTextColor),
+                    hintStyle: TextStyle(color: _subTextColor.withOpacity(0.5)),
+                    prefixIcon: Icon(Icons.email_outlined, color: theme.colorScheme.primary),
+                    filled: true,
+                    fillColor: theme.scaffoldBackgroundColor,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(_isNeo ? 4 : 10),
+                      borderSide: BorderSide(
+                        color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(_isNeo ? 4 : 10),
+                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+                    ),
+                  ),
+                ),
+              ] else ...[
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(_isNeo ? 4 : 8),
+                    border: Border.all(
+                      color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: theme.colorScheme.primary, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          "OTP dikirim ke: ${_emailController.text}",
+                          style: TextStyle(
+                            color: _textColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _otpController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  style: TextStyle(color: _textColor, fontSize: 16, letterSpacing: 3),
+                  decoration: InputDecoration(
+                    labelText: "Kode OTP (6 Digit)",
+                    prefixIcon: Icon(Icons.key_rounded, color: theme.colorScheme.primary),
+                    filled: true,
+                    fillColor: theme.scaffoldBackgroundColor,
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(_isNeo ? 4 : 10),
+                      borderSide: BorderSide(
+                        color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(_isNeo ? 4 : 10),
+                      borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+                    ),
+                  ),
+                ),
+              ],
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 10),
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          if (_isOtpSent)
+            TextButton(
+              onPressed: _isLoading
+                  ? null
+                  : () => setState(() {
+                        _isOtpSent = false;
+                        _errorMessage = null;
+                        _otpController.clear();
+                      }),
+              child: Text("UBAH GMAIL", style: TextStyle(color: _subTextColor)),
+            ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              side: _isNeo ? const BorderSide(color: Colors.black, width: 2) : BorderSide.none,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(_isNeo ? 4 : 8),
+              ),
+            ),
+            onPressed: _isLoading ? null : (_isOtpSent ? _verifyOtp : _sendOtp),
+            child: _isLoading
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      color: _isNeo && _isLight ? Colors.black : Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
+                    _isOtpSent ? "VERIFIKASI" : "KIRIM OTP",
+                    style: TextStyle(
+                      color: _isNeo && _isLight ? Colors.black : Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -42,16 +42,18 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
   bool _isSending = false;
   String? _responseMessage;
 
-  // Real-time Sender Count State (Murni Mengikuti API)
+  // Real-time Sender Count State
   int _privateSenderCount = 0;
   int _globalSenderCount = 0;
   bool _isFetchingSenders = false;
 
-  // State Limit Khusus Global Sender
+  // State Limit Khusus Global Sender dari Backend
   int _globalUsageCount = 0;
-  final int _maxGlobalLimit = 5;
+  int _maxGlobalLimit = 0;
+  Map<String, int> _currentRoleLimits = {};
+  bool _isLoadingLimits = false;
 
-  // KEY USER-SPECIFIC (Tersimpan Berdasarkan Username)
+  // Key SharedPreferences khusus pemakaian harian lokal user
   String get _keyGlobalUsageCount => 'global_usage_count_${widget.username.toLowerCase()}';
   String get _keyGlobalFirstUseTime => 'global_first_use_${widget.username.toLowerCase()}';
 
@@ -65,21 +67,24 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
   Color get _subTextColor => _isLight ? Colors.black54 : Colors.white70;
   bool get _isNeo => themeModeNotifier.value != 0;
 
+  // HANYA ROLE DEVELOPER YANG BISA UBAH LIMIT
+  bool get _isOnlyDeveloper {
+    final cleanRole = widget.role.toLowerCase().trim();
+    return cleanRole == "dev" || cleanRole == "developer";
+  }
+
+  // HAK AKSES GLOBAL SENDER (MEMBER TIDAK DAPAT, MINIMAL VIP)
   bool get _isAllowedToUseGlobal {
     final cleanRole = widget.role.toLowerCase().trim();
-    return cleanRole == "staff" ||
-        cleanRole == "team" ||
-        cleanRole == "owner" ||
-        cleanRole == "admin" ||
-        cleanRole == "developer" ||
-        cleanRole == "reseller" ||
-        cleanRole == "vip";
+    if (cleanRole == "member") return false;
+    return _maxGlobalLimit > 0;
   }
 
   @override
   void initState() {
     super.initState();
-    _loadGlobalUsageData();
+    _fetchRoleLimitsFromBackend();
+    _loadUserUsageCount();
     _fetchSenderCounts();
 
     _fadeController = AnimationController(
@@ -93,6 +98,226 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
     )..repeat(reverse: true);
 
     _initializeVideoPlayer();
+  }
+
+  // AMBIL LIMIT ROLE TERBARU DARI BACKEND
+  Future<void> _fetchRoleLimitsFromBackend() async {
+    setState(() => _isLoadingLimits = true);
+    try {
+      final res = await http.get(Uri.parse('$baseUrl/api/limits'));
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['success'] == true && data['limits'] != null) {
+          final Map<String, dynamic> rawLimits = data['limits'];
+          final Map<String, int> parsedLimits = rawLimits.map(
+            (key, value) => MapEntry(key.toLowerCase(), (value as num).toInt()),
+          );
+
+          final cleanRole = widget.role.toLowerCase().trim();
+          if (mounted) {
+            setState(() {
+              _currentRoleLimits = parsedLimits;
+              _maxGlobalLimit = cleanRole == "member" ? 0 : (parsedLimits[cleanRole] ?? 0);
+            });
+          }
+        }
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() => _isLoadingLimits = false);
+    }
+  }
+
+  // AMBIL PEMAKAIAN HARIAN USER LOKAL
+  Future<void> _loadUserUsageCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? firstUseStr = prefs.getString(_keyGlobalFirstUseTime);
+    int count = prefs.getInt(_keyGlobalUsageCount) ?? 0;
+
+    if (firstUseStr != null) {
+      final firstUseTime = DateTime.parse(firstUseStr);
+      final now = DateTime.now();
+
+      if (now.difference(firstUseTime).inHours >= 24) {
+        count = 0;
+        await prefs.setInt(_keyGlobalUsageCount, 0);
+        await prefs.remove(_keyGlobalFirstUseTime);
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _globalUsageCount = count;
+      });
+    }
+  }
+
+  // KIRIM UPDATE LIMIT ROLE KE BACKEND (KHUSUS DEV)
+  Future<void> _saveLimitsToBackend(Map<String, int> newLimits) async {
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/limits/update'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'senderRole': widget.role,
+          'limits': newLimits,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+      if (data['success'] == true) {
+        await _fetchRoleLimitsFromBackend();
+        if (mounted) {
+          _showAlert("✅ BERHASIL", "Limit Global Sender telah disimpan di server untuk semua user!");
+        }
+      } else {
+        if (mounted) {
+          _showAlert("❌ GAGAL", data['message'] ?? "Gagal menyimpan perubahan ke server.");
+        }
+      }
+    } catch (_) {
+      if (mounted) {
+        _showAlert("❌ ERROR", "Gagal terhubung ke server backend.");
+      }
+    }
+  }
+
+  // DIALOG EDIT LIMIT (KHUSUS DEVELOPER)
+  Future<void> _showManageRoleLimitsDialog() async {
+    if (!_isOnlyDeveloper) return;
+
+    final theme = Theme.of(context);
+    final Map<String, TextEditingController> controllers = {};
+    _currentRoleLimits.forEach((role, limit) {
+      controllers[role] = TextEditingController(text: limit.toString());
+    });
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
+            side: BorderSide(
+              color: _isNeo ? Colors.black : theme.colorScheme.primary,
+              width: _isNeo ? 3 : 1.5,
+            ),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.developer_mode, color: theme.colorScheme.primary, size: 26),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  "SETTING LIMIT (BACKEND)",
+                  style: TextStyle(
+                    color: _textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Ubah limit harian Global Sender per role. Perubahan ini tersimpan di server dan otomatis memengaruhi semua user.",
+                    style: TextStyle(color: _subTextColor, fontSize: 12),
+                  ),
+                  const SizedBox(height: 16),
+                  ..._currentRoleLimits.keys.map((roleKey) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              roleKey.toUpperCase(),
+                              style: TextStyle(
+                                color: roleKey == "member" ? Colors.redAccent : _textColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: TextField(
+                              controller: controllers[roleKey],
+                              keyboardType: TextInputType.number,
+                              style: TextStyle(color: _textColor, fontSize: 13),
+                              decoration: InputDecoration(
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                filled: true,
+                                fillColor: theme.scaffoldBackgroundColor,
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(_isNeo ? 4 : 8),
+                                  borderSide: BorderSide(
+                                    color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(_isNeo ? 4 : 8),
+                                  borderSide: BorderSide(color: theme.colorScheme.primary, width: 2),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("BATAL", style: TextStyle(color: _subTextColor)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                side: _isNeo ? const BorderSide(color: Colors.black, width: 2) : BorderSide.none,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(_isNeo ? 4 : 8),
+                ),
+              ),
+              onPressed: () async {
+                final Map<String, int> updatedLimits = {};
+                for (String roleKey in controllers.keys) {
+                  final newVal = int.tryParse(controllers[roleKey]!.text.trim());
+                  if (newVal != null) {
+                    updatedLimits[roleKey] = newVal;
+                  }
+                }
+                Navigator.pop(context);
+                await _saveLimitsToBackend(updatedLimits);
+              },
+              child: Text(
+                "SIMPAN KE SERVER",
+                style: TextStyle(
+                  color: _isNeo && _isLight ? Colors.black : Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _fetchSenderCounts() async {
@@ -118,32 +343,6 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
     }
   }
 
-  // FUNGSI LOAD DATA LIMIT
-  Future<void> _loadGlobalUsageData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? firstUseStr = prefs.getString(_keyGlobalFirstUseTime);
-    int count = prefs.getInt(_keyGlobalUsageCount) ?? 0;
-
-    if (firstUseStr != null) {
-      final firstUseTime = DateTime.parse(firstUseStr);
-      final now = DateTime.now();
-
-      // Reset kuota jika sudah melewati 24 jam dari pemakaian pertama
-      if (now.difference(firstUseTime).inHours >= 24) {
-        count = 0;
-        await prefs.setInt(_keyGlobalUsageCount, 0);
-        await prefs.remove(_keyGlobalFirstUseTime);
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _globalUsageCount = count;
-      });
-    }
-  }
-
-  // FUNGSI CEK & TAMBAH LIMIT
   Future<bool> _checkAndIncrementGlobalUsage() async {
     final prefs = await SharedPreferences.getInstance();
     final String? firstUseStr = prefs.getString(_keyGlobalFirstUseTime);
@@ -359,11 +558,19 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
     }
 
     if (_selectedSenderType == "global") {
+      if (!_isAllowedToUseGlobal) {
+        _showAlert(
+          "🔒 TERKUNCI",
+          "Role MEMBER tidak mendapat akses Global Sender. Minimal role VIP.",
+        );
+        return;
+      }
+
       final allowed = await _checkAndIncrementGlobalUsage();
       if (!allowed) {
         _showAlert(
           "⏳ Limit Global Sender Tercapai",
-          "Batas pemakaian Global Sender (5x / 24 jam) telah habis.",
+          "Batas pemakaian Global Sender ($_maxGlobalLimit x / 24 jam) untuk role ${widget.role.toUpperCase()} telah habis.",
         );
         return;
       }
@@ -514,6 +721,12 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
               ],
             ),
           ),
+          if (_isOnlyDeveloper)
+            IconButton(
+              icon: Icon(Icons.settings, color: theme.colorScheme.primary),
+              tooltip: 'Set Limit Backend (Dev Only)',
+              onPressed: _showManageRoleLimitsDialog,
+            ),
         ],
       ),
     );
@@ -595,8 +808,11 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
               ],
             ),
             IconButton(
-              onPressed: _isFetchingSenders ? null : _fetchSenderCounts,
-              icon: _isFetchingSenders
+              onPressed: _isFetchingSenders ? null : () {
+                _fetchSenderCounts();
+                _fetchRoleLimitsFromBackend();
+              },
+              icon: _isFetchingSenders || _isLoadingLimits
                   ? SizedBox(
                       width: 16,
                       height: 16,
@@ -625,7 +841,7 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
                   } else {
                     _showAlert(
                       "🔒 AKSES TERKUNCI",
-                      "Global Sender khusus Admin/Reseller/Owner.",
+                      "Role MEMBER tidak mendapat akses Global Sender. Minimal role VIP.",
                     );
                   }
                 },
@@ -680,19 +896,19 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
                           fontSize: 11,
                         ),
                       ),
-                      if (_isAllowedToUseGlobal) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          "Kuota: $_globalUsageCount/$_maxGlobalLimit",
-                          style: TextStyle(
-                            color: _globalUsageCount >= _maxGlobalLimit
-                                ? Colors.redAccent
-                                : theme.colorScheme.primary,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _isAllowedToUseGlobal
+                            ? "Kuota: $_globalUsageCount/$_maxGlobalLimit"
+                            : "No Access",
+                        style: TextStyle(
+                          color: !_isAllowedToUseGlobal || _globalUsageCount >= _maxGlobalLimit
+                              ? Colors.redAccent
+                              : theme.colorScheme.primary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
@@ -978,7 +1194,6 @@ class _SpamNHomePageState extends State<SpamNHomePage> with TickerProviderStateM
   Widget _buildResponseMessage() {
     if (_responseMessage == null) return const SizedBox.shrink();
     final isSuccess = _responseMessage!.startsWith('✅');
-    final theme = Theme.of(context);
 
     return Padding(
       padding: const EdgeInsets.only(top: 20),

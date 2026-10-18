@@ -1,77 +1,107 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'providers/music_provider.dart'; // Ganti sesuai letak file provider-mu
-import 'screens/full_player_screen.dart'; // Ganti sesuai letak full player
+import 'providers/music_provider.dart';
+import 'screens/full_player_screen.dart';
 
 class GlobalMiniPlayer extends StatelessWidget {
   const GlobalMiniPlayer({super.key});
 
   @override
   Widget build(BuildContext context) {
-        return Positioned(
-      top: 55, // Jarak dari atas layar (sesuaikan agar pas di bawah tombol dashboardmu)
-      left: 16,
-      right: 70, // Beri jarak kanan agar tidak menutupi tombol lonceng/profil
-      child: Consumer<MusicProvider>(
-        builder: (context, provider, child) {
-          if (provider.currentSong == null) return const SizedBox.shrink();
-          
-          return Material(
-            color: Colors.transparent,
-            child: GestureDetector(
-              onTap: () {
-                // Gunakan PUSH biasa alih-alih BottomSheet
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const FullPlayerScreen()),
-                );
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 5),
-                    )
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: CachedNetworkImage(
-                        imageUrl: provider.currentSong!['thumbnail'],
-                        width: 35,
-                        height: 35,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        provider.currentSong!['title'],
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    IconButton(
-                      icon: provider.isLoadingAudio 
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : Icon(provider.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill, color: Colors.blueAccent),
-                      onPressed: () => provider.togglePlayPause(),
-                    )
-                  ],
+    final provider = Provider.of<MusicProvider>(context);
+    final song = provider.currentSong;
+
+    // Jika tidak ada lagu yang dipilih, sembunyikan mini player
+    if (song == null) return const SizedBox.shrink();
+
+    // BUNGKUS DENGAN GESTURE DETECTOR UNTUK NAVIGASI KE FULL PLAYER
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const FullPlayerScreen()),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+        padding: const EdgeInsets.all(8.0),
+        decoration: BoxDecoration(
+          color: Colors.amberAccent.shade400, // Warna kuning sesuai desain kamu
+          borderRadius: BorderRadius.circular(16.0),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10,
+              offset: Offset(0, 4),
+            )
+          ],
+        ),
+        child: Row(
+          children: [
+            // Thumbnail Mini
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8.0),
+              child: Image.network(
+                song['thumbnail'] ?? '',
+                width: 50,
+                height: 50,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: 50,
+                  height: 50,
+                  color: Colors.grey[800],
+                  child: const Icon(Icons.music_note, color: Colors.white),
                 ),
               ),
             ),
-          );
-        },
+            const SizedBox(width: 12),
+            
+            // Judul dan Artis Mini
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    song['title'] ?? 'Unknown Title',
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    song['artist'] ?? 'Unknown Artist',
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            
+            // Tombol Play / Pause di Mini Player
+            IconButton(
+              icon: provider.isLoadingAudio
+                  ? const SizedBox(
+                      width: 24, 
+                      height: 24, 
+                      child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2)
+                    )
+                  : Icon(
+                      provider.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                      color: Colors.black,
+                      size: 36,
+                    ),
+              onPressed: provider.isLoadingAudio ? null : () => provider.togglePlayPause(),
+            ),
+          ],
+        ),
       ),
     );
   }

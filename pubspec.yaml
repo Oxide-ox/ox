@@ -1,7 +1,7 @@
 name: xxo25
 description: "Oxide App"
 publish_to: 'none'
-version: 1.0.0+1
+version: 5.0.0+5
 
 environment:
   sdk: ^3.8.1
@@ -22,6 +22,7 @@ dependencies:
 
   # --- Networking & API ---
   http: ^1.6.0
+  html: ^0.15.4
   dio: ^5.7.0
   web_socket_channel: ^2.4.0
   network_info_plus: ^4.1.0
@@ -30,7 +31,7 @@ dependencies:
   # --- UI & Utilities ---
   cupertino_icons: ^1.0.8
   font_awesome_flutter: ^10.10.0
-  flutter_svg: ^2.0.10+1 # 👈 DITAMBAHKAN (untuk render ikon SVG)
+  flutter_svg: ^2.0.10+1
   cached_network_image: ^3.4.1
   fl_chart: ^0.68.0
   carousel_slider: ^5.0.0
@@ -55,7 +56,6 @@ dependencies:
   firebase_auth: ^4.16.0
   cloud_firestore: ^4.15.8
 
-
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1
   flutter_test:
@@ -73,7 +73,6 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
 
-  # Cukup daftarkan foldernya saja
   assets:
     - assets/videos/
     - assets/images/

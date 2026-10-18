@@ -8,7 +8,6 @@ import 'splash.dart';
 import 'app_theme.dart';
 
 import 'btrapps/.dart';
-import 'buy_access_page.dart';
 
 final baseUrl = Api.api;
 
@@ -252,19 +251,6 @@ class _MainLandingPageState extends State<MainLandingPage> {
                         );
                       },
                     ),
-                    const SizedBox(height: 16),
-
-                    _buildGlowButton(
-                      text: "BUY ACCESS AUTOMATIC",
-                      icon: Icons.shopping_cart_checkout_rounded,
-                      isSecondary: true,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const BuyAccessPage()),
-                        );
-                      },
-                    ),
                     const SizedBox(height: 20),
 
                     TextButton.icon(
@@ -292,7 +278,7 @@ class _MainLandingPageState extends State<MainLandingPage> {
 }
 
 // =============================================================================
-// 2. LOGIN PAGE (FORM UTAMA LOGIN)
+// 2. LOGIN PAGE (FORM UTAMA LOGIN & FORGOT PASSWORD)
 // =============================================================================
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -416,6 +402,13 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     if (mounted) setState(() => isLoading = false);
+  }
+
+  void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => const _ForgotPasswordDialog(),
+    );
   }
 
   void _showPopup({
@@ -551,6 +544,21 @@ class _LoginPageState extends State<LoginPage> {
                                     isPass: true,
                                     validator: (v) => (v == null || v.trim().isEmpty) ? "Password wajib diisi" : null,
                                   ),
+                                  const SizedBox(height: 10),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: GestureDetector(
+                                      onTap: _showForgotPasswordDialog,
+                                      child: const Text(
+                                        "Lupa Password?",
+                                        style: TextStyle(
+                                          color: AppTheme.primaryMagenta,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -641,6 +649,265 @@ class _LoginPageState extends State<LoginPage> {
           borderSide: const BorderSide(color: AppTheme.primaryMagenta, width: 1.5),
         ),
       ),
+    );
+  }
+}
+
+// =============================================================================
+// 3. DIALOG LUPA PASSWORD (FORGOT PASSWORD) VIA OTP GMAIL
+// =============================================================================
+class _ForgotPasswordDialog extends StatefulWidget {
+  const _ForgotPasswordDialog();
+
+  @override
+  State<_ForgotPasswordDialog> createState() => _ForgotPasswordDialogState();
+}
+
+class _ForgotPasswordDialogState extends State<_ForgotPasswordDialog> {
+  final _usernameController = TextEditingController();
+  final _otpController = TextEditingController();
+  final _newPassController = TextEditingController();
+
+  bool _isOtpSent = false;
+  bool _isLoading = false;
+  bool _obscurePass = true;
+  String? _errorMessage;
+
+  // STEP 1: Kirim OTP ke Gmail yang terhubung dengan Username
+  Future<void> _sendOtp() async {
+    final username = _usernameController.text.trim();
+    if (username.isEmpty) {
+      setState(() => _errorMessage = "Masukkan username Anda!");
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/auth/forgot-password-otp'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': username}),
+      );
+
+      final data = jsonDecode(res.body);
+      if (data['success'] == true) {
+        setState(() {
+          _isOtpSent = true;
+        });
+      } else {
+        setState(() => _errorMessage = data['message'] ?? "Username tidak terikat Gmail/tidak ditemukan.");
+      }
+    } catch (_) {
+      setState(() => _errorMessage = "Gagal terhubung ke server.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  // STEP 2: Verifikasi OTP & Reset Password Baru
+  Future<void> _resetPassword() async {
+    final otp = _otpController.text.trim();
+    final newPass = _newPassController.text.trim();
+
+    if (otp.length < 6) {
+      setState(() => _errorMessage = "Masukkan 6 digit kode OTP!");
+      return;
+    }
+    if (newPass.isEmpty) {
+      setState(() => _errorMessage = "Masukkan password baru!");
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/auth/reset-password'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': _usernameController.text.trim(),
+          'otp': otp,
+          'newPassword': newPass,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+      if (data['success'] == true) {
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("✅ Password berhasil diubah! Silakan login."),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        setState(() => _errorMessage = data['message'] ?? "Gagal meriset password.");
+      }
+    } catch (_) {
+      setState(() => _errorMessage = "Terjadi kesalahan koneksi.");
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _otpController.dispose();
+    _newPassController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF14081E),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: AppTheme.primaryMagenta.withOpacity(0.5), width: 1.5),
+      ),
+      title: Row(
+        children: const [
+          Icon(Icons.lock_reset_rounded, color: AppTheme.primaryMagenta, size: 24),
+          SizedBox(width: 10),
+          Text(
+            "LUPA PASSWORD",
+            style: TextStyle(
+              color: AppTheme.whiteText,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Masukkan username Anda. OTP pemulihan akan dikirimkan ke Gmail terdaftar.",
+              style: TextStyle(color: AppTheme.grayText, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            if (!_isOtpSent) ...[
+              TextField(
+                controller: _usernameController,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                decoration: InputDecoration(
+                  labelText: "Username Akun",
+                  labelStyle: const TextStyle(color: AppTheme.grayText),
+                  prefixIcon: const Icon(Icons.person_outline, color: AppTheme.primaryMagenta),
+                  filled: true,
+                  fillColor: const Color(0xFF0E0616),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: AppTheme.primaryMagenta.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppTheme.primaryMagenta, width: 1.5),
+                  ),
+                ),
+              ),
+            ] else ...[
+              TextField(
+                controller: _otpController,
+                keyboardType: TextInputType.number,
+                maxLength: 6,
+                style: const TextStyle(color: Colors.white, fontSize: 16, letterSpacing: 3),
+                decoration: InputDecoration(
+                  labelText: "Kode OTP (6 Digit)",
+                  labelStyle: const TextStyle(color: AppTheme.grayText),
+                  prefixIcon: const Icon(Icons.key_rounded, color: AppTheme.primaryMagenta),
+                  filled: true,
+                  fillColor: const Color(0xFF0E0616),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: AppTheme.primaryMagenta.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppTheme.primaryMagenta, width: 1.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _newPassController,
+                obscureText: _obscurePass,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                decoration: InputDecoration(
+                  labelText: "Password Baru",
+                  labelStyle: const TextStyle(color: AppTheme.grayText),
+                  prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.primaryMagenta),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePass ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: AppTheme.grayText,
+                    ),
+                    onPressed: () => setState(() => _obscurePass = !_obscurePass),
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFF0E0616),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: AppTheme.primaryMagenta.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: AppTheme.primaryMagenta, width: 1.5),
+                  ),
+                ),
+              ),
+            ],
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                _errorMessage!,
+                style: const TextStyle(
+                  color: Colors.redAccent,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text("BATAL", style: TextStyle(color: AppTheme.grayText)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryMagenta,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          onPressed: _isLoading ? null : (_isOtpSent ? _resetPassword : _sendOtp),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                )
+              : Text(
+                  _isOtpSent ? "SIMPAN" : "KIRIM OTP",
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+        ),
+      ],
     );
   }
 }

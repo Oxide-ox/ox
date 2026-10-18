@@ -1,15 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Permissions Umum & Kamera -->
+    <!-- Permissions Umum, Lokasi & Kamera -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.CAMERA"/>
     
-    <!-- Permissions Storage (Android 12 ke bawah & Android 13+) -->
+    <!-- Permissions Storage & Media (Android 12 ke bawah & Android 13+) -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     
     <!-- Permissions Audio & Rekaman -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
@@ -25,7 +27,7 @@
         android:label="OXIDE APPS"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true"> <!-- WAJIB UNTUK HTTP -->
+        android:usesCleartextTraffic="true"> <!-- WAJIB UNTUK HTTP & WEBVIEW -->
 
         <activity
             android:name=".MainActivity"
@@ -72,11 +74,19 @@
             android:value="2" />
     </application>
 
-    <!-- Query intent untuk pencarian/proses teks -->
+    <!-- Query intent untuk url_launcher & pencarian/proses teks -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
         </intent>
     </queries>
 </manifest>

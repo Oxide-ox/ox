@@ -82,7 +82,6 @@ class _DashboardPageState extends State<DashboardPage>
   late AnimationController _controller;
   late Animation<double> _animation;
 
-  // Timer untuk mengirim heartbeat dan fetch stats
   Timer? _statsTimer;
 
   late String sessionKey;
@@ -153,17 +152,14 @@ class _DashboardPageState extends State<DashboardPage>
     _fetchStoriesFromBackend();
     _fetchNews();
 
-    // Kirim Heartbeat pertama kali saat halaman dirender
     _sendHeartbeatAndFetchStats();
 
-    // Timer Ping Heartbeat Setiap 30 Detik (Sangat Enteng)
     _statsTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
       if (mounted) {
         _sendHeartbeatAndFetchStats();
       }
     });
 
-    // Tampilkan Pop-Up jika Gmail belum terikat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_isGmailLinkedState) {
         _showRequireGmailDialog();
@@ -171,17 +167,14 @@ class _DashboardPageState extends State<DashboardPage>
     });
   }
 
-  // FUNGSI SEND HEARTBEAT & FETCH STATS REAL-TIME
   Future<void> _sendHeartbeatAndFetchStats() async {
     try {
-      // 1. Kirim sinyal Heartbeat (Ping) ke backend
       http.post(
         Uri.parse('$baseUrl/api/heartbeat'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'username': username}),
       ).catchError((_) => http.Response('', 500));
 
-      // 2. Minta data statistik terbaru dari server
       final response = await http.get(
         Uri.parse('$baseUrl/api/dashboard-stats?username=$username'),
       );
@@ -203,7 +196,7 @@ class _DashboardPageState extends State<DashboardPage>
   void _showRequireGmailDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (BuildContext context) {
         return _GmailLinkDialog(
           username: username,
@@ -2186,7 +2179,6 @@ class _DashboardPageState extends State<DashboardPage>
   }
 }
 
-// POP-UP DIALOG UNTUK MANDATORI VERIFIKASI GMAIL (1 USER = 1 GMAIL)
 class _GmailLinkDialog extends StatefulWidget {
   final String username;
   final VoidCallback onSuccess;
@@ -2298,7 +2290,7 @@ class _GmailLinkDialogState extends State<_GmailLinkDialog> {
     final theme = Theme.of(context);
 
     return PopScope(
-      canPop: false,
+      canPop: true,
       child: AlertDialog(
         backgroundColor: theme.colorScheme.surface,
         shape: RoundedRectangleBorder(
@@ -2322,6 +2314,10 @@ class _GmailLinkDialogState extends State<_GmailLinkDialog> {
                 ),
               ),
             ),
+            IconButton(
+              icon: Icon(Icons.close_rounded, color: _subTextColor, size: 22),
+              onPressed: () => Navigator.pop(context),
+            ),
           ],
         ),
         content: SizedBox(
@@ -2331,7 +2327,7 @@ class _GmailLinkDialogState extends State<_GmailLinkDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Setiap akun wajib menghubungkan 1 akun Gmail unik untuk fitur pemulihan kata sandi (Forgot PW).",
+                "Hubungkan Gmail kamu untuk kemudahan pemulihan kata sandi (Forgot PW) jika sewaktu-waktu lupa.",
                 style: TextStyle(color: _subTextColor, fontSize: 12),
               ),
               const SizedBox(height: 16),
@@ -2426,6 +2422,10 @@ class _GmailLinkDialogState extends State<_GmailLinkDialog> {
           ),
         ),
         actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("NANTI SAJA", style: TextStyle(color: _subTextColor)),
+          ),
           if (_isOtpSent)
             TextButton(
               onPressed: _isLoading

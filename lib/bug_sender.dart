@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'btrapps/.dart';
 import 'app_theme.dart';
 
@@ -32,14 +31,20 @@ class _BugSenderPageState extends State<BugSenderPage> {
 
   String _selectedManageType = "private";
 
+  // Helpers Tema Dinamis
   bool get _isLight => Theme.of(context).brightness == Brightness.light;
-  Color get _textColor => _isLight ? Colors.black87 : Colors.white;
-  Color get _subTextColor => _isLight ? Colors.black54 : Colors.white70;
-  bool get _isNeo => themeModeNotifier.value != 0;
+  Color get _textColor => Theme.of(context).colorScheme.onSurface;
+  Color get _subTextColor => Theme.of(context).colorScheme.onSurface.withOpacity(0.7);
+  bool get _isNeo => themeModeNotifier.value == 1; // True jika Mode Neo-Brutalist
 
   bool get _isAllowedToUseGlobal {
     final cleanRole = widget.role.toLowerCase().trim();
-    return cleanRole == "owner" || cleanRole == "admin" || cleanRole == "reseller";
+    return cleanRole == "team" ||
+        cleanRole == "staff" ||
+        cleanRole == "vip" ||
+        cleanRole == "owner" ||
+        cleanRole == "admin" ||
+        cleanRole == "reseller";
   }
 
   @override
@@ -105,7 +110,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
           side: BorderSide(
-            color: _isNeo ? Colors.black : theme.colorScheme.primary,
+            color: _isNeo ? Colors.black : theme.colorScheme.outline,
             width: _isNeo ? 3 : 1.5,
           ),
         ),
@@ -134,12 +139,12 @@ class _BugSenderPageState extends State<BugSenderPage> {
                 labelText: "Phone Number",
                 labelStyle: TextStyle(color: theme.colorScheme.primary),
                 hintText: "62xxx",
-                hintStyle: TextStyle(color: _subTextColor),
+                hintStyle: TextStyle(color: _subTextColor.withOpacity(0.5)),
                 prefixIcon: Icon(Icons.phone, color: theme.colorScheme.primary),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(_isNeo ? 4 : 12),
                   borderSide: BorderSide(
-                    color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.5),
+                    color: _isNeo ? Colors.black : theme.colorScheme.outline.withOpacity(0.5),
                     width: _isNeo ? 2 : 1,
                   ),
                 ),
@@ -164,9 +169,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
               color: theme.colorScheme.primary,
               borderRadius: BorderRadius.circular(_isNeo ? 4 : 12),
               border: _isNeo ? Border.all(color: Colors.black, width: 2) : null,
-              boxShadow: _isNeo
-                  ? [const BoxShadow(color: Colors.black, offset: Offset(2, 2))]
-                  : null,
+              boxShadow: _isNeo ? [const BoxShadow(color: Colors.black, offset: Offset(2, 2))] : null,
             ),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -190,7 +193,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
               child: Text(
                 "ADD SENDER",
                 style: TextStyle(
-                  color: _isNeo && _isLight ? Colors.black : Colors.white,
+                  color: _isNeo && _isLight ? Colors.black : theme.colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -239,7 +242,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
           side: BorderSide(
-            color: _isNeo ? Colors.black : theme.colorScheme.primary,
+            color: _isNeo ? Colors.black : theme.colorScheme.outline,
             width: _isNeo ? 3 : 1.5,
           ),
         ),
@@ -271,7 +274,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
             color: theme.scaffoldBackgroundColor,
             borderRadius: BorderRadius.circular(_isNeo ? 6 : 16),
             border: Border.all(
-              color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+              color: _isNeo ? Colors.black : theme.colorScheme.outline.withOpacity(0.3),
               width: _isNeo ? 2 : 1,
             ),
           ),
@@ -336,14 +339,16 @@ class _BugSenderPageState extends State<BugSenderPage> {
                   ),
                   onPressed: () async {
                     await Clipboard.setData(ClipboardData(text: code));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Text("Code copied to clipboard!"),
-                        backgroundColor: theme.colorScheme.primary,
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 2),
-                      ),
-                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text("Code copied to clipboard!"),
+                          backgroundColor: theme.colorScheme.primary,
+                          behavior: SnackBarBehavior.floating,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
                   },
                 ),
               ),
@@ -376,7 +381,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
               child: Text(
                 "REFRESH LIST",
                 style: TextStyle(
-                  color: _isNeo && _isLight ? Colors.black : Colors.white,
+                  color: _isNeo && _isLight ? Colors.black : theme.colorScheme.onPrimary,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -475,7 +480,10 @@ class _BugSenderPageState extends State<BugSenderPage> {
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: TextStyle(
+            color: _isNeo ? Colors.black : Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         backgroundColor: isError ? Colors.redAccent : theme.colorScheme.primary,
         behavior: SnackBarBehavior.floating,
@@ -497,7 +505,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(_isNeo ? 8 : 16),
         border: Border.all(
-          color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.2),
+          color: _isNeo ? Colors.black : theme.colorScheme.outline.withOpacity(0.3),
           width: _isNeo ? 3 : 1,
         ),
         boxShadow: _isNeo
@@ -531,7 +539,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
                     "PRIVATE SENDER",
                     style: TextStyle(
                       color: _selectedManageType == "private"
-                          ? (_isNeo && _isLight ? Colors.black : Colors.white)
+                          ? (_isNeo && _isLight ? Colors.black : theme.colorScheme.onPrimary)
                           : _textColor,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
@@ -559,7 +567,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
                         side: BorderSide(
-                          color: _isNeo ? Colors.black : theme.colorScheme.primary,
+                          color: _isNeo ? Colors.black : theme.colorScheme.outline,
                           width: _isNeo ? 3 : 1.5,
                         ),
                       ),
@@ -602,7 +610,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
                       "GLOBAL SENDER",
                       style: TextStyle(
                         color: _selectedManageType == "global"
-                            ? (_isNeo && _isLight ? Colors.black : Colors.white)
+                            ? (_isNeo && _isLight ? Colors.black : theme.colorScheme.onPrimary)
                             : (_isAllowedToUseGlobal ? _textColor : _subTextColor),
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
@@ -632,7 +640,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
         border: Border.all(
-          color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+          color: _isNeo ? Colors.black : theme.colorScheme.outline.withOpacity(0.4),
           width: _isNeo ? 3.0 : 1.0,
         ),
         boxShadow: _isNeo
@@ -710,7 +718,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
                       foregroundColor: _textColor,
                       backgroundColor: theme.scaffoldBackgroundColor,
                       side: BorderSide(
-                        color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                        color: _isNeo ? Colors.black : theme.colorScheme.outline.withOpacity(0.4),
                         width: _isNeo ? 2 : 1,
                       ),
                       shape: RoundedRectangleBorder(
@@ -761,7 +769,7 @@ class _BugSenderPageState extends State<BugSenderPage> {
                 color: theme.colorScheme.surface,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                  color: _isNeo ? Colors.black : theme.colorScheme.outline.withOpacity(0.3),
                   width: _isNeo ? 3 : 1.5,
                 ),
               ),
@@ -800,12 +808,12 @@ class _BugSenderPageState extends State<BugSenderPage> {
               child: ElevatedButton.icon(
                 icon: Icon(
                   Icons.add,
-                  color: _isNeo && _isLight ? Colors.black : Colors.white,
+                  color: _isNeo && _isLight ? Colors.black : theme.colorScheme.onPrimary,
                 ),
                 label: Text(
                   "ADD FIRST SENDER",
                   style: TextStyle(
-                    color: _isNeo && _isLight ? Colors.black : Colors.white,
+                    color: _isNeo && _isLight ? Colors.black : theme.colorScheme.onPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -861,12 +869,12 @@ class _BugSenderPageState extends State<BugSenderPage> {
               child: ElevatedButton.icon(
                 icon: Icon(
                   Icons.refresh,
-                  color: _isNeo && _isLight ? Colors.black : Colors.white,
+                  color: _isNeo && _isLight ? Colors.black : theme.colorScheme.onPrimary,
                 ),
                 label: Text(
                   "TRY AGAIN",
                   style: TextStyle(
-                    color: _isNeo && _isLight ? Colors.black : Colors.white,
+                    color: _isNeo && _isLight ? Colors.black : theme.colorScheme.onPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -889,83 +897,99 @@ class _BugSenderPageState extends State<BugSenderPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    return ValueListenableBuilder<int>(
+      valueListenable: themeModeNotifier,
+      builder: (context, modeIndex, child) {
+        final currentTheme = AppTheme.currentTheme;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: Text(
-          "MANAGE BUG SENDER",
-          style: TextStyle(
-            color: _textColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.primary),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: theme.colorScheme.primary),
-            onPressed: isLoading ? null : _refreshSenders,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildRoleTabs(),
-          Expanded(
-            child: isLoading && senderList.isEmpty
-                ? Center(
-                    child: CircularProgressIndicator(color: theme.colorScheme.primary),
-                  )
-                : errorMessage != null && senderList.isEmpty
-                    ? _buildErrorState()
-                    : senderList.isEmpty
-                        ? _buildEmptyState()
-                        : RefreshIndicator(
-                            color: theme.colorScheme.primary,
-                            backgroundColor: theme.colorScheme.surface,
-                            onRefresh: _refreshSenders,
-                            child: ListView.builder(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount: senderList.length,
-                              itemBuilder: (context, index) => _buildSenderCard(
-                                Map<String, dynamic>.from(senderList[index]),
-                                index,
-                              ),
-                            ),
-                          ),
-          ),
-        ],
-      ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primary,
-          shape: BoxShape.circle,
-          border: _isNeo ? Border.all(color: Colors.black, width: 2.5) : null,
-          boxShadow: _isNeo
-              ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(3, 3))]
-              : [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.4),
-                    blurRadius: 15,
+        return Theme(
+          data: currentTheme,
+          child: Builder(
+            builder: (context) {
+              final theme = Theme.of(context);
+
+              return Scaffold(
+                backgroundColor: Colors.transparent,
+                appBar: AppBar(
+                  title: Text(
+                    "MANAGE BUG SENDER",
+                    style: TextStyle(
+                      color: _textColor,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ],
-        ),
-        child: FloatingActionButton(
-          onPressed: _showAddSenderDialog,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: Icon(
-            Icons.add,
-            color: _isNeo && _isLight ? Colors.black : Colors.white,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  leading: IconButton(
+                    icon: Icon(Icons.arrow_back_ios_new, color: theme.colorScheme.primary),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  actions: [
+                    IconButton(
+                      icon: Icon(Icons.refresh, color: theme.colorScheme.primary),
+                      onPressed: isLoading ? null : _refreshSenders,
+                    ),
+                  ],
+                ),
+                body: BackgroundWrapper(
+                  child: Column(
+                    children: [
+                      _buildRoleTabs(),
+                      Expanded(
+                        child: isLoading && senderList.isEmpty
+                            ? Center(
+                                child: CircularProgressIndicator(color: theme.colorScheme.primary),
+                              )
+                            : errorMessage != null && senderList.isEmpty
+                                ? _buildErrorState()
+                                : senderList.isEmpty
+                                    ? _buildEmptyState()
+                                    : RefreshIndicator(
+                                        color: theme.colorScheme.primary,
+                                        backgroundColor: theme.colorScheme.surface,
+                                        onRefresh: _refreshSenders,
+                                        child: ListView.builder(
+                                          physics: const AlwaysScrollableScrollPhysics(),
+                                          itemCount: senderList.length,
+                                          itemBuilder: (context, index) => _buildSenderCard(
+                                            Map<String, dynamic>.from(senderList[index]),
+                                            index,
+                                          ),
+                                        ),
+                                      ),
+                      ),
+                    ],
+                  ),
+                ),
+                floatingActionButton: Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                    border: _isNeo ? Border.all(color: Colors.black, width: 2.5) : null,
+                    boxShadow: _isNeo
+                        ? [const BoxShadow(color: Colors.black, blurRadius: 0, offset: Offset(3, 3))]
+                        : [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withOpacity(0.4),
+                              blurRadius: 15,
+                            ),
+                          ],
+                  ),
+                  child: FloatingActionButton(
+                    onPressed: _showAddSenderDialog,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    child: Icon(
+                      Icons.add,
+                      color: _isNeo && _isLight ? Colors.black : theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

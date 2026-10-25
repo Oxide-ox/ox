@@ -304,7 +304,7 @@ class _ToolsPageState extends State<ToolsPage> {
     // --- ENTERTAINMENT & MUSIC ---
     ToolItem(
       title: 'Oxfy',
-      subtitle: ' Oxide music',
+      subtitle: 'Oxide music',
       category: 'ENTERTAINMENT',
       icon: Icons.music_note_rounded,
       iconColor: Colors.cyanAccent,
@@ -335,234 +335,300 @@ class _ToolsPageState extends State<ToolsPage> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
+    return ValueListenableBuilder<int>(
+      valueListenable: themeModeNotifier,
+      builder: (context, modeIndex, child) {
+        final currentTheme = AppTheme.currentTheme;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 12),
-            // SEARCH BAR + STAR ICON
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(isNeo ? 8 : 16),
-                        border: Border.all(
-                          color: isNeo
-                              ? Colors.black
-                              : theme.colorScheme.primary.withOpacity(0.5),
-                          width: isNeo ? 2 : 1.5,
-                        ),
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (val) => setState(() => _searchQuery = val),
-                        style: TextStyle(
-                          color: theme.brightness == Brightness.light
-                              ? Colors.black87
-                              : Colors.white,
-                          fontSize: 14,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Cari tools...',
-                          hintStyle: TextStyle(
-                            color: theme.brightness == Brightness.light
-                                ? Colors.black45
-                                : Colors.white54,
-                            fontSize: 14,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search_rounded,
-                            color: theme.colorScheme.primary,
-                            size: 20,
-                          ),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: Icon(
-                                    Icons.clear,
-                                    color: theme.brightness == Brightness.light
-                                        ? Colors.black54
-                                        : Colors.white54,
-                                    size: 18,
+        return Theme(
+          data: currentTheme,
+          child: Builder(
+            builder: (context) {
+              final theme = Theme.of(context);
+              final isNeo = modeIndex == 1;
+              final textColor = theme.colorScheme.onSurface;
+              final subTextColor = textColor.withOpacity(0.7);
+
+              return Scaffold(
+                backgroundColor: Colors.transparent,
+                body: BackgroundWrapper(
+                  child: SafeArea(
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 12),
+                        // SEARCH BAR + STAR ICON
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surface,
+                                    borderRadius:
+                                        BorderRadius.circular(isNeo ? 8 : 16),
+                                    border: Border.all(
+                                      color: isNeo
+                                          ? Colors.black
+                                          : theme.colorScheme.outline
+                                              .withOpacity(0.3),
+                                      width: isNeo ? 2.5 : 1.5,
+                                    ),
+                                    boxShadow: isNeo
+                                        ? [
+                                            const BoxShadow(
+                                              color: Colors.black,
+                                              blurRadius: 0,
+                                              offset: Offset(3, 3),
+                                            )
+                                          ]
+                                        : null,
                                   ),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() => _searchQuery = '');
-                                  },
-                                )
-                              : null,
-                          border: InputBorder.none,
-                          contentPadding:
-                              const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Container(
-                    height: 48,
-                    width: 48,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(isNeo ? 8 : 16),
-                      border: Border.all(
-                        color: isNeo
-                            ? Colors.black
-                            : theme.colorScheme.primary.withOpacity(0.5),
-                        width: isNeo ? 2 : 1.5,
-                      ),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.star_outline_rounded,
-                        color: theme.colorScheme.primary,
-                      ),
-                      onPressed: () {},
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-
-            // HORIZONTAL CATEGORY CHIPS
-            SizedBox(
-              height: 38,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _categories.length,
-                itemBuilder: (context, index) {
-                  final category = _categories[index];
-                  final isSelected = _selectedCategory == category;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8.0),
-                    child: GestureDetector(
-                      onTap: () => setState(() => _selectedCategory = category),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.surface,
-                          borderRadius: BorderRadius.circular(isNeo ? 6 : 20),
-                          border: Border.all(
-                            color: isSelected
-                                ? theme.colorScheme.primary
-                                : (isNeo
-                                    ? Colors.black
-                                    : theme.colorScheme.primary
-                                        .withOpacity(0.3)),
-                            width: isNeo ? 2 : 1.5,
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: theme.colorScheme.primary
-                                        .withOpacity(0.4),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  )
-                                ]
-                              : [],
-                        ),
-                        child: Row(
-                          children: [
-                            if (category == 'ALL') ...[
-                              Icon(
-                                Icons.grid_view_rounded,
-                                size: 14,
-                                color: isSelected ? Colors.white : theme.colorScheme.primary,
+                                  child: TextField(
+                                    controller: _searchController,
+                                    onChanged: (val) =>
+                                        setState(() => _searchQuery = val),
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 14,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Cari tools...',
+                                      hintStyle: TextStyle(
+                                        color: subTextColor,
+                                        fontSize: 14,
+                                      ),
+                                      prefixIcon: Icon(
+                                        Icons.search_rounded,
+                                        color: theme.colorScheme.primary,
+                                        size: 20,
+                                      ),
+                                      suffixIcon: _searchQuery.isNotEmpty
+                                          ? IconButton(
+                                              icon: Icon(
+                                                Icons.clear,
+                                                color: subTextColor,
+                                                size: 18,
+                                              ),
+                                              onPressed: () {
+                                                _searchController.clear();
+                                                setState(
+                                                    () => _searchQuery = '');
+                                              },
+                                            )
+                                          : null,
+                                      border: InputBorder.none,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                          vertical: 12),
+                                    ),
+                                  ),
+                                ),
                               ),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: 10),
+                              Container(
+                                height: 48,
+                                width: 48,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surface,
+                                  borderRadius:
+                                      BorderRadius.circular(isNeo ? 8 : 16),
+                                  border: Border.all(
+                                    color: isNeo
+                                        ? Colors.black
+                                        : theme.colorScheme.outline
+                                            .withOpacity(0.3),
+                                    width: isNeo ? 2.5 : 1.5,
+                                  ),
+                                  boxShadow: isNeo
+                                      ? [
+                                          const BoxShadow(
+                                            color: Colors.black,
+                                            blurRadius: 0,
+                                            offset: Offset(3, 3),
+                                          )
+                                        ]
+                                      : null,
+                                ),
+                                child: IconButton(
+                                  icon: Icon(
+                                    Icons.star_outline_rounded,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                  onPressed: () {},
+                                ),
+                              ),
                             ],
-                            Text(
-                              category,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : (theme.brightness == Brightness.light
-                                        ? Colors.black87
-                                        : Colors.white70),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
+                        const SizedBox(height: 14),
 
-            // GRID VIEW TOOLS
-            Expanded(
-              child: _filteredTools.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.search_off_rounded,
-                            size: 48,
-                            color: theme.colorScheme.primary.withOpacity(0.4),
+                        // HORIZONTAL CATEGORY CHIPS
+                        SizedBox(
+                          height: 38,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: _categories.length,
+                            itemBuilder: (context, index) {
+                              final category = _categories[index];
+                              final isSelected = _selectedCategory == category;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: GestureDetector(
+                                  onTap: () => setState(
+                                      () => _selectedCategory = category),
+                                  child: AnimatedContainer(
+                                    duration:
+                                        const Duration(milliseconds: 200),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(
+                                          isNeo ? 6 : 20),
+                                      border: Border.all(
+                                        color: isNeo
+                                            ? Colors.black
+                                            : (isSelected
+                                                ? theme.colorScheme.primary
+                                                : theme.colorScheme.outline
+                                                    .withOpacity(0.3)),
+                                        width: isNeo ? 2 : 1.5,
+                                      ),
+                                      boxShadow: isNeo
+                                          ? (isSelected
+                                              ? [
+                                                  const BoxShadow(
+                                                    color: Colors.black,
+                                                    blurRadius: 0,
+                                                    offset: Offset(2, 2),
+                                                  )
+                                                ]
+                                              : [])
+                                          : (isSelected
+                                              ? [
+                                                  BoxShadow(
+                                                    color: theme
+                                                        .colorScheme.primary
+                                                        .withOpacity(0.4),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 2),
+                                                  )
+                                                ]
+                                              : []),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        if (category == 'ALL') ...[
+                                          Icon(
+                                            Icons.grid_view_rounded,
+                                            size: 14,
+                                            color: isSelected
+                                                ? theme.colorScheme.onPrimary
+                                                : theme.colorScheme.primary,
+                                          ),
+                                          const SizedBox(width: 6),
+                                        ],
+                                        Text(
+                                          category,
+                                          style: TextStyle(
+                                            color: isSelected
+                                                ? (isNeo &&
+                                                        theme.brightness ==
+                                                            Brightness.light
+                                                    ? Colors.black
+                                                    : theme.colorScheme
+                                                        .onPrimary)
+                                                : textColor,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Tools tidak ditemukan',
-                            style: TextStyle(
-                              color: theme.brightness == Brightness.light
-                                  ? Colors.black54
-                                  : Colors.white54,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : GridView.builder(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      physics: const BouncingScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 14,
-                        mainAxisSpacing: 14,
-                        childAspectRatio: 0.95,
-                      ),
-                      itemCount: _filteredTools.length,
-                      itemBuilder: (context, index) {
-                        final tool = _filteredTools[index];
-                        return _buildToolCard(context, tool);
-                      },
+                        ),
+                        const SizedBox(height: 16),
+
+                        // GRID VIEW TOOLS
+                        Expanded(
+                          child: _filteredTools.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.search_off_rounded,
+                                        size: 48,
+                                        color: theme.colorScheme.primary
+                                            .withOpacity(0.4),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Tools tidak ditemukan',
+                                        style: TextStyle(
+                                          color: subTextColor,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : GridView.builder(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 8),
+                                  physics: const BouncingScrollPhysics(),
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 2,
+                                    crossAxisSpacing: 14,
+                                    mainAxisSpacing: 14,
+                                    childAspectRatio: 0.95,
+                                  ),
+                                  itemCount: _filteredTools.length,
+                                  itemBuilder: (context, index) {
+                                    final tool = _filteredTools[index];
+                                    return _buildToolCard(
+                                        context, tool, isNeo, textColor, subTextColor);
+                                  },
+                                ),
+                        ),
+                      ],
                     ),
-            ),
-          ],
-        ),
-      ),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildToolCard(BuildContext context, ToolItem tool) {
+  Widget _buildToolCard(
+    BuildContext context,
+    ToolItem tool,
+    bool isNeo,
+    Color textColor,
+    Color subTextColor,
+  ) {
     final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
-    final isLight = theme.brightness == Brightness.light;
 
     return GestureDetector(
       onTap: () {
@@ -578,7 +644,7 @@ class _ToolsPageState extends State<ToolsPage> {
           border: Border.all(
             color: isNeo
                 ? Colors.black
-                : theme.colorScheme.primary.withOpacity(0.4),
+                : theme.colorScheme.outline.withOpacity(0.3),
             width: isNeo ? 2.5 : 1.5,
           ),
           boxShadow: isNeo
@@ -591,7 +657,7 @@ class _ToolsPageState extends State<ToolsPage> {
                 ]
               : [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.15),
+                    color: theme.colorScheme.primary.withOpacity(0.12),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -611,7 +677,7 @@ class _ToolsPageState extends State<ToolsPage> {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: isNeo ? Colors.black : tool.iconColor.withOpacity(0.4),
-                      width: 1,
+                      width: isNeo ? 1.5 : 1.0,
                     ),
                   ),
                   child: Icon(tool.icon, color: tool.iconColor, size: 22),
@@ -659,7 +725,7 @@ class _ToolsPageState extends State<ToolsPage> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isLight ? Colors.black87 : Colors.white,
+                color: textColor,
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
               ),
@@ -670,7 +736,7 @@ class _ToolsPageState extends State<ToolsPage> {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isLight ? Colors.black54 : Colors.white60,
+                color: subTextColor,
                 fontSize: 10,
                 height: 1.2,
               ),
@@ -682,8 +748,10 @@ class _ToolsPageState extends State<ToolsPage> {
                 color: theme.scaffoldBackgroundColor,
                 borderRadius: BorderRadius.circular(isNeo ? 4 : 8),
                 border: Border.all(
-                  color: isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
-                  width: 1,
+                  color: isNeo
+                      ? Colors.black
+                      : theme.colorScheme.outline.withOpacity(0.3),
+                  width: isNeo ? 1.5 : 1.0,
                 ),
               ),
               child: Text(

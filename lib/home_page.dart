@@ -24,7 +24,7 @@ class BugModulePage extends StatefulWidget {
     required this.password,
     required this.sessionKey,
     required this.listBug,
-    required this.listSpam, // 
+    required this.listSpam,
     required this.listGb,
     required this.role,
     required this.expiredDate,
@@ -40,9 +40,9 @@ class _BugModulePageState extends State<BugModulePage> {
   bool _isVideoInitialized = false;
 
   bool get _isLight => Theme.of(context).brightness == Brightness.light;
-  Color get _textColor => _isLight ? Colors.black87 : Colors.white;
-  Color get _subTextColor => _isLight ? Colors.black54 : Colors.white70;
-  bool get _isNeo => themeModeNotifier.value != 0;
+  Color get _textColor => Theme.of(context).colorScheme.onSurface;
+  Color get _subTextColor => Theme.of(context).colorScheme.onSurface.withOpacity(0.7);
+  bool get _isNeo => themeModeNotifier.value == 1;
 
   @override
   void initState() {
@@ -53,19 +53,23 @@ class _BugModulePageState extends State<BugModulePage> {
   void _initializeVideoPlayer() {
     _videoController = VideoPlayerController.asset('assets/videos/banner.mp4');
     _videoController.initialize().then((_) {
-      setState(() {
-        _videoController.setVolume(0.0);
-        _chewieController = ChewieController(
-          videoPlayerController: _videoController,
-          autoPlay: true,
-          looping: true,
-          showControls: false,
-          autoInitialize: true,
-        );
-        _isVideoInitialized = true;
-      });
+      if (mounted) {
+        setState(() {
+          _videoController.setVolume(0.0);
+          _chewieController = ChewieController(
+            videoPlayerController: _videoController,
+            autoPlay: true,
+            looping: true,
+            showControls: false,
+            autoInitialize: true,
+          );
+          _isVideoInitialized = true;
+        });
+      }
     }).catchError((_) {
-      setState(() => _isVideoInitialized = false);
+      if (mounted) {
+        setState(() => _isVideoInitialized = false);
+      }
     });
   }
 
@@ -80,153 +84,171 @@ class _BugModulePageState extends State<BugModulePage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    return ValueListenableBuilder<int>(
+      valueListenable: themeModeNotifier,
+      builder: (context, modeIndex, child) {
+        final currentTheme = AppTheme.currentTheme;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeaderPanel(),
-              _buildVideoPlayer(),
-              const SizedBox(height: 10),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Text(
-                  "SELECT MODULE",
-                  style: TextStyle(
-                    color: _textColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
+        return Theme(
+          data: currentTheme,
+          child: Builder(
+            builder: (context) {
+              final theme = Theme.of(context);
+
+              return Scaffold(
+                backgroundColor: Colors.transparent,
+                body: BackgroundWrapper(
+                  child: SafeArea(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildHeaderPanel(),
+                          _buildVideoPlayer(),
+                          const SizedBox(height: 10),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text(
+                              "SELECT MODULE",
+                              style: TextStyle(
+                                color: _textColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 380,
+                            child: ListView(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              children: [
+                                _buildModuleCard(
+                                  title: "BUG NOMOR TIDAK UNTUK SENDER GLOBAL",
+                                  subtitle: "TARGET NOMOR",
+                                  badgeText: "NUMBER ONLY",
+                                  badgeColor: theme.colorScheme.primary,
+                                  iconData: Icons.phone_android_rounded,
+                                  features: const [
+                                    "ATTACK NUMBER",
+                                    "CRASH SYSTEM",
+                                    "SPAM BUG",
+                                    "SENDER PRIVATE",
+                                    "SENDER GLOBAL HANYA ADA PADA BUG V2",
+                                  ],
+                                  buttonText: "START MODULE",
+                                  onStart: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => NHomePage(
+                                          username: widget.username,
+                                          password: widget.password,
+                                          sessionKey: widget.sessionKey,
+                                          listBug: widget.listBug,
+                                          role: widget.role,
+                                          expiredDate: widget.expiredDate,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _buildModuleCard(
+                                  title: "BUG GROUP",
+                                  subtitle: "TARGET KOMUNITAS / GRUP",
+                                  badgeText: "GROUP ONLY",
+                                  badgeColor: theme.colorScheme.secondary,
+                                  iconData: Icons.groups_rounded,
+                                  features: const [
+                                    "ATTACK VIA LINK WA GROUP TARGET",
+                                    "SPAM RAID MULTI ANGGOTA GRUP WA",
+                                    "SENDER PRIVATE",
+                                  ],
+                                  buttonText: "START MODULE",
+                                  onStart: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => GroupPage(
+                                          username: widget.username,
+                                          password: widget.password,
+                                          sessionKey: widget.sessionKey,
+                                          listGb: widget.listGb,
+                                          role: widget.role,
+                                          expiredDate: widget.expiredDate,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _buildModuleCard(
+                                  title: "BUG NOMOR V2 UNTUK SENDER GLOBAL",
+                                  subtitle: "TARGET NOMOR",
+                                  badgeText: "NUMBER ONLY",
+                                  badgeColor: theme.colorScheme.primary,
+                                  iconData: Icons.phone_android_rounded,
+                                  features: const [
+                                    "ATTACK NUMBER",
+                                    "CRASH SYSTEM",
+                                    "NO SPAM BUG",
+                                    "SENDER GLOBAL",
+                                  ],
+                                  buttonText: "START MODULE",
+                                  onStart: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => SpamNHomePage(
+                                          username: widget.username,
+                                          password: widget.password,
+                                          sessionKey: widget.sessionKey,
+                                          listSpam: widget.listSpam,
+                                          role: widget.role,
+                                          expiredDate: widget.expiredDate,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                _buildModuleCard(
+                                  title: "SPAM OTP",
+                                  subtitle: "TARGET NOMOR",
+                                  badgeText: "NUMBER ONLY",
+                                  badgeColor: theme.colorScheme.primary,
+                                  iconData: Icons.phone_android_rounded,
+                                  features: const [
+                                    "ATTACK NUMBER",
+                                    "BURST MODE",
+                                    "AUTO NORMALIZATION",
+                                    "MULTI ENDPOINT",
+                                    "ONLY NO INDONESIA KARENA ENDPOINT NYA HANYA BISA UNTUK NO INDONESIA TIDAK BISA NO LUAR",
+                                  ],
+                                  buttonText: "START MODULE",
+                                  onStart: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const SpamOtpPage(),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              SizedBox(
-                height: 380,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  children: [
-                    _buildModuleCard(
-                      title: "BUG NOMOR",
-                      subtitle: "TARGET NOMOR",
-                      badgeText: "NUMBER ONLY",
-                      badgeColor: theme.colorScheme.primary,
-                      iconData: Icons.phone_android_rounded,
-                      features: [
-                        "ATTACK NUMBER",
-                        "CRASH SYSTEM",
-                        "SPAM BUG",
-                        "SENDER PRIVATE",
-                      ],
-                      buttonText: "START MODULE",
-                      onStart: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => NHomePage(
-                              username: widget.username,
-                              password: widget.password,
-                              sessionKey: widget.sessionKey,
-                              listBug: widget.listBug,
-                              role: widget.role,
-                              expiredDate: widget.expiredDate,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildModuleCard(
-                      title: "BUG GROUP",
-                      subtitle: "TARGET KOMUNITAS / GRUP",
-                      badgeText: "GROUP ONLY",
-                      badgeColor: theme.colorScheme.secondary,
-                      iconData: Icons.groups_rounded,
-                      features: [
-                        "ATTACK VIA LINK WA GROUP TARGET",
-                        "SPAM RAID MULTI ANGGOTA GRUP WA",
-                        "SENDER PRIVATE",
-                      ],
-                      buttonText: "START MODULE",
-                      onStart: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => GroupPage(
-                              username: widget.username,
-                              password: widget.password,
-                              sessionKey: widget.sessionKey,
-                              listGb: widget.listGb,
-                              role: widget.role,
-                              expiredDate: widget.expiredDate,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildModuleCard(
-                      title: "BUG NOMOR V2",
-                      subtitle: "TARGET NOMOR",
-                      badgeText: "NUMBER ONLY",
-                      badgeColor: theme.colorScheme.primary,
-                      iconData: Icons.phone_android_rounded,
-                      features: [
-                        "ATTACK NUMBER",
-                        "CRASH SYSTEM",
-                        "NO SPAM BUG",
-                        "SENDER GLOBAL",
-                      ],
-                      buttonText: "START MODULE",
-                      onStart: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => SpamNHomePage(
-                              username: widget.username,
-                              password: widget.password,
-                              sessionKey: widget.sessionKey,
-                              listSpam: widget.listSpam,
-                              role: widget.role,
-                              expiredDate: widget.expiredDate,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildModuleCard(
-                    title: "SPAM OTP",
-                    subtitle: "TARGET NOMOR",
-                    badgeText: "NUMBER ONLY",
-                    badgeColor: theme.colorScheme.primary,
-                    iconData: Icons.phone_android_rounded,
-                    features: const [
-                       "ATTACK NUMBER",
-                       "BURST MODE",
-                       "AUTO NORMALIZATION",
-                       "MULTI ENDPOINT",
-                    ],
-                    buttonText: "START MODULE",
-                    onStart: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SpamOtpPage(),
-                        ),
-                      );
-                    },
-                  ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
+              );
+            },
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -239,7 +261,9 @@ class _BugModulePageState extends State<BugModulePage> {
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(_isNeo ? 8 : 22),
         border: Border.all(
-          color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+          color: _isNeo
+              ? Colors.black
+              : theme.colorScheme.outline.withOpacity(0.3),
           width: _isNeo ? 3.0 : 1.2,
         ),
         boxShadow: _isNeo
@@ -288,14 +312,16 @@ class _BugModulePageState extends State<BugModulePage> {
                     color: theme.colorScheme.primary.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(_isNeo ? 2 : 8),
                     border: Border.all(
-                      color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.5),
+                      color: _isNeo
+                          ? Colors.black
+                          : theme.colorScheme.primary.withOpacity(0.5),
                       width: _isNeo ? 1.5 : 1.0,
                     ),
                   ),
                   child: Text(
                     "ROLE: ${widget.role.toUpperCase()} | EXP: ${widget.expiredDate}",
                     style: TextStyle(
-                      color: _isNeo ? Colors.black : theme.colorScheme.primary,
+                      color: _isNeo && _isLight ? Colors.black : theme.colorScheme.primary,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -321,12 +347,17 @@ class _BugModulePageState extends State<BugModulePage> {
           color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
           border: Border.all(
-            color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+            color: _isNeo
+                ? Colors.black
+                : theme.colorScheme.outline.withOpacity(0.3),
             width: _isNeo ? 3 : 1,
           ),
         ),
         child: Center(
-          child: CircularProgressIndicator(color: theme.colorScheme.primary, strokeWidth: 2.5),
+          child: CircularProgressIndicator(
+            color: theme.colorScheme.primary,
+            strokeWidth: 2.5,
+          ),
         ),
       );
     }
@@ -336,7 +367,9 @@ class _BugModulePageState extends State<BugModulePage> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(_isNeo ? 8 : 20),
         border: Border.all(
-          color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.4),
+          color: _isNeo
+              ? Colors.black
+              : theme.colorScheme.outline.withOpacity(0.4),
           width: _isNeo ? 3 : 1.5,
         ),
         boxShadow: _isNeo
@@ -425,13 +458,18 @@ class _BugModulePageState extends State<BugModulePage> {
                             children: [
                               Icon(iconData, color: badgeColor, size: 22),
                               const SizedBox(width: 8),
-                              Text(
-                                title,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 16,
-                                  letterSpacing: 1.0,
+                              SizedBox(
+                                width: cardWidth * 0.45,
+                                child: Text(
+                                  title,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 14,
+                                    letterSpacing: 0.8,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -470,8 +508,10 @@ class _BugModulePageState extends State<BugModulePage> {
                       ...features.map((f) => Padding(
                             padding: const EdgeInsets.symmetric(vertical: 3),
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Container(
+                                  margin: const EdgeInsets.only(top: 4),
                                   width: 6,
                                   height: 6,
                                   decoration: BoxDecoration(

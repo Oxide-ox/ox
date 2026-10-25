@@ -419,35 +419,46 @@ class _DashboardPageState extends State<DashboardPage>
     Navigator.pop(context);
   }
 
+  // ===========================================================================
+  // BUILD DASHBOARD DENGAN TATA LETAK DINAMIS DARI DASHBOARD LAYOUT NOTIFIER
+  // ===========================================================================
   Widget _buildMainDashboardContent() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStorySection(),
-          const SizedBox(height: 18),
-          _buildNewsCarouselSection(),
-          const SizedBox(height: 20),
-          _buildDashboardUserCard(),
-          const SizedBox(height: 20),
-          _buildHorizontalQuickActions(),
-          const SizedBox(height: 16),
-          _buildFourFeatureGrid(),
-          const SizedBox(height: 20),
-          _buildKompasNewsCard(),
-          const SizedBox(height: 16),
-          _buildBottomChannelAndTqCards(),
-          const SizedBox(height: 20),
-        ],
-      ),
+    return ValueListenableBuilder<List<LayoutItem>>(
+      valueListenable: dashboardLayoutNotifier,
+      builder: (context, layoutList, _) {
+        final Map<String, Widget> widgetMap = {
+          'story': _buildStorySection(),
+          'news_carousel': _buildNewsCarouselSection(),
+          'user_card': _buildDashboardUserCard(),
+          'quick_actions': _buildHorizontalQuickActions(),
+          'feature_grid': _buildFourFeatureGrid(),
+          'kompas_news': _buildKompasNewsCard(),
+          'bottom_cards': _buildBottomChannelAndTqCards(),
+        };
+
+        List<Widget> activeWidgets = [];
+        for (var item in layoutList) {
+          if (item.isVisible && widgetMap.containsKey(item.id)) {
+            activeWidgets.add(widgetMap[item.id]!);
+            activeWidgets.add(const SizedBox(height: 18));
+          }
+        }
+
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: activeWidgets,
+          ),
+        );
+      },
     );
   }
 
   Widget _buildStorySection() {
     final groupedStories = _getGroupedStories();
     final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
+    final isNeo = themeModeNotifier.value == 1;
 
     return SizedBox(
       height: 95,
@@ -621,7 +632,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildNewsCarouselSection() {
     final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
+    final isNeo = themeModeNotifier.value == 1;
 
     if (newsList.isEmpty) {
       return Container(
@@ -633,7 +644,7 @@ class _DashboardPageState extends State<DashboardPage>
           border: Border.all(
             color: isNeo
                 ? Colors.black
-                : theme.colorScheme.primary.withOpacity(0.3),
+                : theme.colorScheme.outline.withOpacity(0.3),
             width: isNeo ? 3.0 : 1.0,
           ),
           boxShadow: isNeo
@@ -671,7 +682,7 @@ class _DashboardPageState extends State<DashboardPage>
                   border: Border.all(
                     color: isNeo
                         ? Colors.black
-                        : theme.colorScheme.primary.withOpacity(0.3),
+                        : theme.colorScheme.outline.withOpacity(0.3),
                     width: isNeo ? 3.0 : 1.0,
                   ),
                   boxShadow: isNeo
@@ -772,7 +783,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildDashboardUserCard() {
     final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
+    final isNeo = themeModeNotifier.value == 1;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -784,7 +795,7 @@ class _DashboardPageState extends State<DashboardPage>
           border: Border.all(
             color: isNeo
                 ? Colors.black
-                : theme.colorScheme.primary.withOpacity(0.3),
+                : theme.colorScheme.outline.withOpacity(0.3),
             width: isNeo ? 3.0 : 1.0,
           ),
           image: const DecorationImage(
@@ -940,7 +951,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildHorizontalQuickActions() {
     final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
+    final isNeo = themeModeNotifier.value == 1;
 
     final actions = [
       {
@@ -995,7 +1006,7 @@ class _DashboardPageState extends State<DashboardPage>
               border: Border.all(
                 color: isNeo
                     ? Colors.black
-                    : theme.colorScheme.primary.withOpacity(0.35),
+                    : theme.colorScheme.outline.withOpacity(0.35),
                 width: isNeo ? 3.0 : 1.2,
               ),
               boxShadow: isNeo
@@ -1026,7 +1037,7 @@ class _DashboardPageState extends State<DashboardPage>
                   ),
                   child: Icon(
                     Icons.bolt_rounded,
-                    color: _isLight ? Colors.black : Colors.white,
+                    color: _isLight ? Colors.black : theme.colorScheme.onPrimary,
                     size: 18,
                   ),
                 ),
@@ -1188,7 +1199,7 @@ class _DashboardPageState extends State<DashboardPage>
                                 Text(
                                   item['title'] as String,
                                   style: TextStyle(
-                                    color: isNeo ? Colors.black : Colors.white,
+                                    color: isNeo ? Colors.black : _textColor,
                                     fontWeight: FontWeight.w900,
                                     fontSize: 18,
                                   ),
@@ -1199,7 +1210,7 @@ class _DashboardPageState extends State<DashboardPage>
                                   style: TextStyle(
                                     color: isNeo
                                         ? Colors.black87
-                                        : Colors.white70,
+                                        : _subTextColor,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -1241,7 +1252,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildFourFeatureGrid() {
     final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
+    final isNeo = themeModeNotifier.value == 1;
 
     final items = [
       {
@@ -1281,7 +1292,7 @@ class _DashboardPageState extends State<DashboardPage>
         },
       },
       {
-        "title": "Spam OTP",
+        "title": "Spam OTP (Khusus No Indo)",
         "sub": "Utility Tool",
         "icon": Icons.security_outlined,
         "color": Colors.cyan,
@@ -1368,7 +1379,7 @@ class _DashboardPageState extends State<DashboardPage>
                           Text(
                             item['title'] as String,
                             style: TextStyle(
-                              color: isNeo ? Colors.black : Colors.white,
+                              color: isNeo ? Colors.black : _textColor,
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
@@ -1379,7 +1390,7 @@ class _DashboardPageState extends State<DashboardPage>
                           Text(
                             item['sub'] as String,
                             style: TextStyle(
-                              color: isNeo ? Colors.black87 : Colors.white70,
+                              color: isNeo ? Colors.black87 : _subTextColor,
                               fontSize: 10,
                             ),
                             maxLines: 1,
@@ -1400,7 +1411,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildKompasNewsCard() {
     final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
+    final isNeo = themeModeNotifier.value == 1;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1412,7 +1423,7 @@ class _DashboardPageState extends State<DashboardPage>
           border: Border.all(
             color: isNeo
                 ? Colors.black
-                : theme.colorScheme.primary.withOpacity(0.35),
+                : theme.colorScheme.outline.withOpacity(0.35),
             width: isNeo ? 3.0 : 1.2,
           ),
           boxShadow: isNeo
@@ -1615,7 +1626,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildBottomChannelAndTqCards() {
     final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
+    final isNeo = themeModeNotifier.value == 1;
 
     final extraActions = [
       {
@@ -1713,7 +1724,7 @@ class _DashboardPageState extends State<DashboardPage>
                         Text(
                           item['title'] as String,
                           style: TextStyle(
-                            color: isNeo ? Colors.black : Colors.white,
+                            color: isNeo ? Colors.black : _textColor,
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -1722,7 +1733,7 @@ class _DashboardPageState extends State<DashboardPage>
                         Text(
                           item['sub'] as String,
                           style: TextStyle(
-                            color: isNeo ? Colors.black87 : Colors.white70,
+                            color: isNeo ? Colors.black87 : _subTextColor,
                             fontSize: 10,
                           ),
                           maxLines: 1,
@@ -1742,7 +1753,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   Widget _buildCustomDrawer() {
     final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
+    final isNeo = themeModeNotifier.value == 1;
 
     return Drawer(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -1966,7 +1977,7 @@ class _DashboardPageState extends State<DashboardPage>
     bool isLogout = false,
   }) {
     final theme = Theme.of(context);
-    final isNeo = themeModeNotifier.value != 0;
+    final isNeo = themeModeNotifier.value == 1;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -1979,7 +1990,7 @@ class _DashboardPageState extends State<DashboardPage>
               ? Colors.red
               : (isNeo
                   ? Colors.black
-                  : theme.colorScheme.primary.withOpacity(0.2)),
+                  : theme.colorScheme.outline.withOpacity(0.2)),
           width: isNeo ? 2 : 1,
         ),
       ),
@@ -2006,7 +2017,7 @@ class _DashboardPageState extends State<DashboardPage>
       valueListenable: themeModeNotifier,
       builder: (context, modeIndex, child) {
         final currentTheme = AppTheme.currentTheme;
-        final isNeo = modeIndex != 0;
+        final isNeo = modeIndex == 1;
 
         return Theme(
           data: currentTheme,
@@ -2015,7 +2026,7 @@ class _DashboardPageState extends State<DashboardPage>
               final theme = Theme.of(context);
 
               return Scaffold(
-                backgroundColor: theme.scaffoldBackgroundColor,
+                backgroundColor: Colors.transparent,
                 drawer: _buildCustomDrawer(),
                 appBar: AppBar(
                   backgroundColor: Colors.transparent,
@@ -2050,9 +2061,20 @@ class _DashboardPageState extends State<DashboardPage>
                   actions: [
                     IconButton(
                       icon: Icon(
+                        Icons.dashboard_customize_outlined,
+                        color: theme.colorScheme.primary,
+                        size: 22,
+                      ),
+                      tooltip: "Atur Posisi Kotak",
+                      onPressed: () {
+                        LayoutSettingsSheet.show(context);
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(
                         Icons.palette_outlined,
                         color: theme.colorScheme.primary,
-                        size: 24,
+                        size: 22,
                       ),
                       tooltip: "Pengaturan Tema",
                       onPressed: () {
@@ -2098,20 +2120,23 @@ class _DashboardPageState extends State<DashboardPage>
                     IconButton(
                       icon: Icon(Icons.headset_mic_rounded,
                           color: theme.colorScheme.primary, size: 22),
-                      onPressed: () => _openUrl("https://t.me/Virzofc"),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ContactPage()),
+                        );
+                      },
                     ),
                     const SizedBox(width: 8),
                   ],
                 ),
-                body: Stack(
-                  children: [
-                    SafeArea(
-                      child: FadeTransition(
-                        opacity: _animation,
-                        child: _selectedPage,
-                      ),
+                body: BackgroundWrapper(
+                  child: SafeArea(
+                    child: FadeTransition(
+                      opacity: _animation,
+                      child: _selectedPage,
                     ),
-                  ],
+                  ),
                 ),
                 bottomNavigationBar: Container(
                   decoration: BoxDecoration(
@@ -2120,7 +2145,7 @@ class _DashboardPageState extends State<DashboardPage>
                       top: BorderSide(
                         color: isNeo
                             ? Colors.black
-                            : theme.colorScheme.primary.withOpacity(0.2),
+                            : theme.colorScheme.outline.withOpacity(0.2),
                         width: isNeo ? 3 : 1,
                       ),
                     ),
@@ -2203,7 +2228,7 @@ class _GmailLinkDialogState extends State<_GmailLinkDialog> {
   bool get _isLight => Theme.of(context).brightness == Brightness.light;
   Color get _textColor => _isLight ? Colors.black87 : Colors.white;
   Color get _subTextColor => _isLight ? Colors.black54 : Colors.white70;
-  bool get _isNeo => themeModeNotifier.value != 0;
+  bool get _isNeo => themeModeNotifier.value == 1;
 
   Future<void> _sendOtp() async {
     final email = _emailController.text.trim();
@@ -2347,7 +2372,7 @@ class _GmailLinkDialogState extends State<_GmailLinkDialog> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(_isNeo ? 4 : 10),
                       borderSide: BorderSide(
-                        color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                        color: _isNeo ? Colors.black : theme.colorScheme.outline.withOpacity(0.3),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -2363,7 +2388,7 @@ class _GmailLinkDialogState extends State<_GmailLinkDialog> {
                     color: theme.colorScheme.primary.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(_isNeo ? 4 : 8),
                     border: Border.all(
-                      color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                      color: _isNeo ? Colors.black : theme.colorScheme.outline.withOpacity(0.3),
                     ),
                   ),
                   child: Row(
@@ -2397,7 +2422,7 @@ class _GmailLinkDialogState extends State<_GmailLinkDialog> {
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(_isNeo ? 4 : 10),
                       borderSide: BorderSide(
-                        color: _isNeo ? Colors.black : theme.colorScheme.primary.withOpacity(0.3),
+                        color: _isNeo ? Colors.black : theme.colorScheme.outline.withOpacity(0.3),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -2451,14 +2476,14 @@ class _GmailLinkDialogState extends State<_GmailLinkDialog> {
                     width: 18,
                     height: 18,
                     child: CircularProgressIndicator(
-                      color: _isNeo && _isLight ? Colors.black : Colors.white,
+                      color: _isNeo && _isLight ? Colors.black : theme.colorScheme.onPrimary,
                       strokeWidth: 2,
                     ),
                   )
                 : Text(
                     _isOtpSent ? "VERIFIKASI" : "KIRIM OTP",
                     style: TextStyle(
-                      color: _isNeo && _isLight ? Colors.black : Colors.white,
+                      color: _isNeo && _isLight ? Colors.black : theme.colorScheme.onPrimary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),

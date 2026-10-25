@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'app_theme.dart';
 
 class ThemeSettingsSheet extends StatefulWidget {
@@ -18,12 +19,120 @@ class ThemeSettingsSheet extends StatefulWidget {
 }
 
 class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
-  // Warna Utama Tema 1 (Original Dark)
   final Color _bgOriginal = const Color(0xFF090212);
   final Color _cardOriginal = const Color(0xFF17092C);
   final Color _neonPink = const Color(0xFFE6007E);
 
-  // FUNGSI MEMBUKA DIALOG CUSTOM COLOR PICKER RETRO
+  final ImagePicker _picker = ImagePicker();
+
+  // Mapping Notifier Warna Berdasarkan Mode Tema Aktif (1 - 5)
+  ValueNotifier<Color>? _getBgNotifier(int mode) {
+    switch (mode) {
+      case 1:
+        return neoBgNotifier;
+      case 2:
+        return popBgNotifier;
+      case 3:
+        return holoBgNotifier;
+      case 4:
+        return retroBgNotifier;
+      case 5:
+        return comicBgNotifier;
+      default:
+        return null;
+    }
+  }
+
+  ValueNotifier<Color>? _getPrimaryNotifier(int mode) {
+    switch (mode) {
+      case 1:
+        return neoPrimaryNotifier;
+      case 2:
+        return popPrimaryNotifier;
+      case 3:
+        return holoPrimaryNotifier;
+      case 4:
+        return retroPrimaryNotifier;
+      case 5:
+        return comicPrimaryNotifier;
+      default:
+        return null;
+    }
+  }
+
+  ValueNotifier<Color>? _getSecondaryNotifier(int mode) {
+    switch (mode) {
+      case 1:
+        return neoSecondaryNotifier;
+      case 2:
+        return popSecondaryNotifier;
+      case 3:
+        return holoSecondaryNotifier;
+      case 4:
+        return retroSecondaryNotifier;
+      case 5:
+        return comicSecondaryNotifier;
+      default:
+        return null;
+    }
+  }
+
+  ValueNotifier<Color>? _getBorderNotifier(int mode) {
+    switch (mode) {
+      case 1:
+        return neoBorderNotifier;
+      case 2:
+        return popBorderNotifier;
+      case 3:
+        return holoBorderNotifier;
+      case 4:
+        return retroBorderNotifier;
+      case 5:
+        return comicBorderNotifier;
+      default:
+        return null;
+    }
+  }
+
+  void _applyPreset(int mode, bool isDark) {
+    switch (mode) {
+      case 1:
+        AppTheme.applyNeoPreset(isDark: isDark);
+        break;
+      case 2:
+        AppTheme.applyPopArtPreset(isDark: isDark);
+        break;
+      case 3:
+        AppTheme.applyHoloPreset(isDark: isDark);
+        break;
+      case 4:
+        AppTheme.applyRetroPreset(isDark: isDark);
+        break;
+      case 5:
+        AppTheme.applyComicPreset(isDark: isDark);
+        break;
+    }
+  }
+
+  String _getModeName(int mode) {
+    switch (mode) {
+      case 0:
+        return "ORIGINAL CYBERPUNK";
+      case 1:
+        return "NEO BRUTALISM";
+      case 2:
+        return "POP ART";
+      case 3:
+        return "3D HOLOGRAPHIC";
+      case 4:
+        return "RETRO FUTURISM";
+      case 5:
+        return "STYLE KOMIK";
+      default:
+        return "CUSTOM";
+    }
+  }
+
   void _pickColor(String title, Color currentColor, Function(Color) onColorSelected) {
     showDialog(
       context: context,
@@ -38,6 +147,22 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
     );
   }
 
+  Future<void> _pickBgImage() async {
+    final XFile? file = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    if (file != null) {
+      await backgroundNotifier.setCustomImage(file.path);
+      setState(() {});
+    }
+  }
+
+  Future<void> _pickBgVideo() async {
+    final XFile? file = await _picker.pickVideo(source: ImageSource.gallery);
+    if (file != null) {
+      await backgroundNotifier.setCustomVideo(file.path);
+      setState(() {});
+    }
+  }
+
   String _colorToHex(Color color) {
     return '#${color.value.toRadixString(16).substring(2).toUpperCase()}';
   }
@@ -45,9 +170,13 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
   @override
   Widget build(BuildContext context) {
     final currentMode = themeModeNotifier.value;
+    final bgNotifierVal = _getBgNotifier(currentMode);
+    final primaryNotifierVal = _getPrimaryNotifier(currentMode);
+    final secondaryNotifierVal = _getSecondaryNotifier(currentMode);
+    final borderNotifierVal = _getBorderNotifier(currentMode);
 
     return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
+      height: MediaQuery.of(context).size.height * 0.88,
       decoration: BoxDecoration(
         color: _bgOriginal,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -91,13 +220,16 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // SECTION 1: MODE TAMPILAN
-                  _buildSectionHeader("MODE TAMPILAN", "Pilih tampilan apk"),
+                  // SECTION 1: MODE TAMPILAN (6 MODE)
+                  _buildSectionHeader("MODE TAMPILAN (6 TEMA)", "Pilih tema aplikasi yang Anda sukai"),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildThemeCard(
+                  SizedBox(
+                    height: 80,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        _buildThemeCard(
                           title: "1. Original",
                           subtitle: "Cyberpunk Classic",
                           isSelected: currentMode == 0,
@@ -106,110 +238,167 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
                             themeModeNotifier.notifyListeners();
                           },
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildThemeCard(
+                        const SizedBox(width: 8),
+                        _buildThemeCard(
                           title: "2. Neo Brutalism",
-                          subtitle: "Custom Colors",
+                          subtitle: "Tegeh & Kontras",
                           isSelected: currentMode == 1,
                           onTap: () {
                             setState(() => themeModeNotifier.value = 1);
                             themeModeNotifier.notifyListeners();
                           },
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildThemeCard(
+                        const SizedBox(width: 8),
+                        _buildThemeCard(
                           title: "3. Pop Art",
-                          subtitle: "Custom Colors",
+                          subtitle: "Warna Cerah",
                           isSelected: currentMode == 2,
                           onTap: () {
                             setState(() => themeModeNotifier.value = 2);
                             themeModeNotifier.notifyListeners();
                           },
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        _buildThemeCard(
+                          title: "4. 3D Holo",
+                          subtitle: "Cyan & Futuristic",
+                          isSelected: currentMode == 3,
+                          onTap: () {
+                            setState(() => themeModeNotifier.value = 3);
+                            themeModeNotifier.notifyListeners();
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildThemeCard(
+                          title: "5. Retro Future",
+                          subtitle: "80s Synthwave",
+                          isSelected: currentMode == 4,
+                          onTap: () {
+                            setState(() => themeModeNotifier.value = 4);
+                            themeModeNotifier.notifyListeners();
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                        _buildThemeCard(
+                          title: "6. Style Komik",
+                          subtitle: "Bold & Vibrant",
+                          isSelected: currentMode == 5,
+                          onTap: () {
+                            setState(() => themeModeNotifier.value = 5);
+                            themeModeNotifier.notifyListeners();
+                          },
+                        ),
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 24),
 
-                  // SECTION 2: KUSTOMISASI WARNA (Khusus Tema 2 & Tema 3)
-                  if (currentMode != 0) ...[
+                  // SECTION 2: KUSTOMISASI BACKGROUND (SOLID / GAMBAR / VIDEO)
+                  _buildSectionHeader("LATAR BELAKANG KUSTOM (BACKGROUND)", "Pilih warna solid, gambar galeri, atau video"),
+                  const SizedBox(height: 12),
+                  ValueListenableBuilder<BgConfig>(
+                    valueListenable: backgroundNotifier,
+                    builder: (context, bgConfig, _) {
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: _buildBgOptionBtn(
+                              label: "Warna Solid",
+                              icon: Icons.color_lens_outlined,
+                              isSelected: bgConfig.type == BgType.color,
+                              onTap: () async {
+                                await backgroundNotifier.setSolidColor();
+                                setState(() {});
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildBgOptionBtn(
+                              label: "Gambar",
+                              icon: Icons.image_outlined,
+                              isSelected: bgConfig.type == BgType.image,
+                              onTap: _pickBgImage,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildBgOptionBtn(
+                              label: "Video",
+                              icon: Icons.videocam_outlined,
+                              isSelected: bgConfig.type == BgType.video,
+                              onTap: _pickBgVideo,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // SECTION 3: KUSTOMISASI WARNA (Khusus Mode 1 - 5)
+                  if (currentMode != 0 &&
+                      bgNotifierVal != null &&
+                      primaryNotifierVal != null &&
+                      secondaryNotifierVal != null &&
+                      borderNotifierVal != null) ...[
                     _buildSectionHeader(
-                      currentMode == 1 ? "KUSTOMISASI WARNA NEO BRUTALISM" : "KUSTOMISASI WARNA POP ART",
-                      "Pilih warna apa saja dari palet warna (16 juta warna / HEX)",
+                      "KUSTOMISASI WARNA ${_getModeName(currentMode)}",
+                      "Ubah 16 juta warna palet secara instan (Hex & Pickers)",
                     ),
                     const SizedBox(height: 12),
 
-                    // Color Pickers
                     _buildColorRow(
                       label: "Warna Background",
                       subLabel: "Latar belakang layar & kartu",
-                      color: currentMode == 1 ? neoBgNotifier.value : popBgNotifier.value,
+                      color: bgNotifierVal.value,
                       currentMode: currentMode,
                       onTap: () {
-                        _pickColor("Background", currentMode == 1 ? neoBgNotifier.value : popBgNotifier.value, (col) {
-                          if (currentMode == 1) {
-                            neoBgNotifier.value = col;
-                          } else {
-                            popBgNotifier.value = col;
-                          }
+                        _pickColor("Background", bgNotifierVal.value, (col) {
+                          bgNotifierVal.value = col;
                         });
                       },
                     ),
                     _buildColorRow(
                       label: "Warna Aksen Utama",
                       subLabel: "Tombol utama, header, highlight penting",
-                      color: currentMode == 1 ? neoPrimaryNotifier.value : popPrimaryNotifier.value,
+                      color: primaryNotifierVal.value,
                       currentMode: currentMode,
                       onTap: () {
-                        _pickColor("Aksen Utama", currentMode == 1 ? neoPrimaryNotifier.value : popPrimaryNotifier.value, (col) {
-                          if (currentMode == 1) {
-                            neoPrimaryNotifier.value = col;
-                          } else {
-                            popPrimaryNotifier.value = col;
-                          }
+                        _pickColor("Aksen Utama", primaryNotifierVal.value, (col) {
+                          primaryNotifierVal.value = col;
                         });
                       },
                     ),
                     _buildColorRow(
                       label: "Warna Aksen Kedua",
                       subLabel: "Badge, tag & highlight pendukung",
-                      color: currentMode == 1 ? neoSecondaryNotifier.value : popSecondaryNotifier.value,
+                      color: secondaryNotifierVal.value,
                       currentMode: currentMode,
                       onTap: () {
-                        _pickColor("Aksen Kedua", currentMode == 1 ? neoSecondaryNotifier.value : popSecondaryNotifier.value, (col) {
-                          if (currentMode == 1) {
-                            neoSecondaryNotifier.value = col;
-                          } else {
-                            popSecondaryNotifier.value = col;
-                          }
+                        _pickColor("Aksen Kedua", secondaryNotifierVal.value, (col) {
+                          secondaryNotifierVal.value = col;
                         });
                       },
                     ),
                     _buildColorRow(
                       label: "Warna Garis / Border",
-                      subLabel: "Border tebal & garis pembatas",
-                      color: currentMode == 1 ? neoBorderNotifier.value : popBorderNotifier.value,
+                      subLabel: "Border & garis pembatas",
+                      color: borderNotifierVal.value,
                       currentMode: currentMode,
                       onTap: () {
-                        _pickColor("Garis / Border", currentMode == 1 ? neoBorderNotifier.value : popBorderNotifier.value, (col) {
-                          if (currentMode == 1) {
-                            neoBorderNotifier.value = col;
-                          } else {
-                            popBorderNotifier.value = col;
-                          }
+                        _pickColor("Garis / Border", borderNotifierVal.value, (col) {
+                          borderNotifierVal.value = col;
                         });
                       },
                     ),
 
                     const SizedBox(height: 20),
 
-                    // SECTION 3: REFERENSI PRESET (DARK & LIGHT)
-                    _buildSectionHeader("PRESET CEPAT (INSPIRASI)", "Pilih preset rekomendasi dark & light."),
+                    // SECTION 4: REFERENSI PRESET (DARK & LIGHT)
+                    _buildSectionHeader("PRESET CEPAT (INSPIRASI)", "Preset rekomendasi dark & light untuk ${_getModeName(currentMode)}."),
                     const SizedBox(height: 10),
                     Row(
                       children: [
@@ -219,7 +408,6 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
                               backgroundColor: Colors.black45,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
-                                // KOTAK LANCIP DI NEO BRUTALISM, MELENGKUNG DI POP ART
                                 borderRadius: currentMode == 1 ? BorderRadius.zero : BorderRadius.circular(10),
                                 side: BorderSide(color: _neonPink.withOpacity(0.5)),
                               ),
@@ -227,11 +415,7 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
                             icon: const Icon(Icons.dark_mode, color: Colors.white, size: 18),
                             label: const Text("Preset Dark", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                             onPressed: () {
-                              if (currentMode == 1) {
-                                AppTheme.applyNeoPreset(isDark: true);
-                              } else {
-                                AppTheme.applyPopArtPreset(isDark: true);
-                              }
+                              _applyPreset(currentMode, true);
                               setState(() {});
                             },
                           ),
@@ -243,7 +427,6 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
                               backgroundColor: Colors.white10,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
-                                // KOTAK LANCIP DI NEO BRUTALISM, MELENGKUNG DI POP ART
                                 borderRadius: currentMode == 1 ? BorderRadius.zero : BorderRadius.circular(10),
                                 side: const BorderSide(color: Colors.white30),
                               ),
@@ -251,11 +434,7 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
                             icon: const Icon(Icons.light_mode, color: Colors.amber, size: 18),
                             label: const Text("Preset Light", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                             onPressed: () {
-                              if (currentMode == 1) {
-                                AppTheme.applyNeoPreset(isDark: false);
-                              } else {
-                                AppTheme.applyPopArtPreset(isDark: false);
-                              }
+                              _applyPreset(currentMode, false);
                               setState(() {});
                             },
                           ),
@@ -298,6 +477,7 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: 130,
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: isSelected ? _neonPink.withOpacity(0.2) : _cardOriginal,
@@ -309,20 +489,68 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (isSelected)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                margin: const EdgeInsets.only(bottom: 6),
+                margin: const EdgeInsets.only(bottom: 4),
                 decoration: BoxDecoration(
                   color: _neonPink,
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text("AKTIF", style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
               ),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.white)),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Colors.white),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 2),
-            Text(subtitle, style: const TextStyle(fontSize: 9, color: Colors.white54)),
+            Text(
+              subtitle,
+              style: const TextStyle(fontSize: 9, color: Colors.white54),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBgOptionBtn({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? _neonPink.withOpacity(0.2) : _cardOriginal,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? _neonPink : Colors.white12,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: isSelected ? _neonPink : Colors.white70, size: 16),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.white70,
+                fontSize: 11,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
           ],
         ),
       ),
@@ -336,7 +564,6 @@ class _ThemeSettingsSheetState extends State<ThemeSettingsSheet> {
     required int currentMode,
     required VoidCallback onTap,
   }) {
-    // KOTAK PERSEGcontrast DAN BORDER PENUH PADA NEO BRUTALISM (LANCIP), MELENGKUNG PADA POP ART
     final BorderRadius cardRadius = currentMode == 1 ? BorderRadius.zero : BorderRadius.circular(12);
     final BorderRadius previewRadius = currentMode == 1 ? BorderRadius.zero : BorderRadius.circular(8);
     final BorderRadius btnRadius = currentMode == 1 ? BorderRadius.zero : BorderRadius.circular(8);
@@ -441,7 +668,7 @@ class _CustomColorPickerDialogState extends State<CustomColorPickerDialog> {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFB2D1), // Warna Modal Pink Retro
+          color: const Color(0xFFFFB2D1),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(color: Colors.black, width: 3),
           boxShadow: const [
@@ -456,7 +683,7 @@ class _CustomColorPickerDialogState extends State<CustomColorPickerDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. KANVAS PEMILIH WARNA (SATURATION & VALUE PALETTE)
+            // 1. SATURATION & VALUE PALETTE
             LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
@@ -475,7 +702,6 @@ class _CustomColorPickerDialogState extends State<CustomColorPickerDialog> {
                       ),
                       child: Stack(
                         children: [
-                          // Gradient Saturation (Putih ke Transparan)
                           Positioned.fill(
                             child: Container(
                               decoration: const BoxDecoration(
@@ -487,7 +713,6 @@ class _CustomColorPickerDialogState extends State<CustomColorPickerDialog> {
                               ),
                             ),
                           ),
-                          // Gradient Value (Transparan ke Hitam)
                           Positioned.fill(
                             child: Container(
                               decoration: const BoxDecoration(
@@ -499,7 +724,6 @@ class _CustomColorPickerDialogState extends State<CustomColorPickerDialog> {
                               ),
                             ),
                           ),
-                          // Kursor Pemilih Warna
                           Positioned(
                             left: (_hsvColor.saturation * width).clamp(0.0, width) - 10,
                             top: ((1.0 - _hsvColor.value) * height).clamp(0.0, height) - 10,
@@ -522,10 +746,9 @@ class _CustomColorPickerDialogState extends State<CustomColorPickerDialog> {
             ),
             const SizedBox(height: 18),
 
-            // 2. PREVIEW CIRCLE + SLIDER PELANGI (HUE SLIDER)
+            // 2. PREVIEW CIRCLE + HUE SLIDER
             Row(
               children: [
-                // Circle Pratinjau Warna di Kiri Slider
                 Container(
                   width: 42,
                   height: 42,
@@ -536,7 +759,6 @@ class _CustomColorPickerDialogState extends State<CustomColorPickerDialog> {
                   ),
                 ),
                 const SizedBox(width: 12),
-                // Slider Spektrum Warna Lengkap (Pelangi)
                 Expanded(
                   child: Container(
                     height: 24,
@@ -583,7 +805,7 @@ class _CustomColorPickerDialogState extends State<CustomColorPickerDialog> {
             ),
             const SizedBox(height: 16),
 
-            // 3. INDIKATOR RGB (DESAIN TEKS DAN ANGKA RGB)
+            // 3. INDIKATOR RGB
             Row(
               children: [
                 const SizedBox(width: 50),
@@ -617,7 +839,7 @@ class _CustomColorPickerDialogState extends State<CustomColorPickerDialog> {
             ),
             const SizedBox(height: 22),
 
-            // 4. TOMBOL BATAL DAN PILIH WARNA DENGAN BORDER TEGAS
+            // 4. ACTION BUTTONS
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -636,7 +858,7 @@ class _CustomColorPickerDialogState extends State<CustomColorPickerDialog> {
                 const SizedBox(width: 12),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF2B7A), // Hot Pink
+                    backgroundColor: const Color(0xFFFF2B7A),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     side: const BorderSide(color: Colors.black, width: 2.5),

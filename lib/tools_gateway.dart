@@ -15,7 +15,7 @@ import 'chtml.dart';
 import 'am.dart';
 import 'telegram.dart';
 import 'spyware.dart';
-import 'prikitiww_music_page.dart';
+import 'prikitiww_music_page.dart' hide AppTheme;
 import 'anime_home.dart';
 import 'instagram_login_page.dart';
 import 'chatbot_page.dart';

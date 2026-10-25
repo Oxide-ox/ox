@@ -12,7 +12,7 @@ class PlaylistScreen extends StatelessWidget {
     final playlist = provider.myPlaylist;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Warna background gelap Oxide
+      backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -24,7 +24,6 @@ class PlaylistScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // Header Aksi (Mainkan & Acak)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             child: Row(
@@ -33,7 +32,6 @@ class PlaylistScreen extends StatelessWidget {
                 Text("${playlist.length} Lagu Disimpan", style: const TextStyle(color: Colors.grey)),
                 Row(
                   children: [
-                    // Tombol Acak / Shuffle
                     IconButton(
                       icon: const Icon(Icons.shuffle, color: Colors.blueAccent),
                       onPressed: () {
@@ -42,14 +40,13 @@ class PlaylistScreen extends StatelessWidget {
                         }
                       },
                     ),
-                    // Tombol Play Besar
                     FloatingActionButton(
                       mini: true,
                       backgroundColor: Colors.blueAccent,
                       onPressed: () {
-                        // Secara teknis kita perlu mengatur antrean (queue) terpisah, 
-                        // tapi untuk saat ini bisa diakali dengan mencari index aslinya di searchResults
-                        // (Karena sistem play API terhubung dengan search index)
+                        if (playlist.isNotEmpty) {
+                          provider.playPlaylistSong(0);
+                        }
                       },
                       child: const Icon(Icons.play_arrow, color: Colors.white),
                     ),
@@ -59,7 +56,6 @@ class PlaylistScreen extends StatelessWidget {
             ),
           ),
           
-          // Daftar Lagu Playlist
           Expanded(
             child: playlist.isEmpty
                 ? const Center(
@@ -69,26 +65,38 @@ class PlaylistScreen extends StatelessWidget {
                     itemCount: playlist.length,
                     itemBuilder: (context, index) {
                       final song = playlist[index];
+                      final isSelected = provider.currentIndex == index && provider.activeQueue == provider.myPlaylist;
                       
                       return ListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
                         leading: ClipRRect(
                           borderRadius: BorderRadius.circular(10),
                           child: CachedNetworkImage(
-                            imageUrl: song['thumbnail'],
-                            width: 55, height: 55, fit: BoxFit.cover,
+                            imageUrl: song['thumbnail'] ?? '',
+                            width: 55, 
+                            height: 55, 
+                            fit: BoxFit.cover,
+                            errorWidget: (context, url, error) => const Icon(Icons.music_note, color: Colors.white),
                           ),
                         ),
                         title: Text(
-                          song['title'],
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          song['title'] ?? 'Unknown Title',
+                          style: TextStyle(
+                            color: isSelected ? Colors.blueAccent : Colors.white, 
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1, 
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        subtitle: Text(song['artist'], style: const TextStyle(color: Colors.grey)),
+                        subtitle: Text(
+                          song['artist'] ?? 'Unknown Artist', 
+                          style: const TextStyle(color: Colors.grey),
+                        ),
                         trailing: IconButton(
                           icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
                           onPressed: () => provider.togglePlaylist(song),
                         ),
+                        onTap: () => provider.playPlaylistSong(index),
                       );
                     },
                   ),

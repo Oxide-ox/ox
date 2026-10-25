@@ -16,9 +16,6 @@ class SpamOtpPage extends StatefulWidget {
 class _SpamOtpPageState extends State<SpamOtpPage> {
   final List<TextEditingController> _controllers = List.generate(5, (_) => TextEditingController());
   
-  // GANTI DENGAN URL BACKEND NODE.JS KAMU
-  static const String API_URL = "$baseUrl/floxotp"; 
-
   bool _isLoading = false;
   String _statusMessage = "";
   
@@ -62,7 +59,7 @@ class _SpamOtpPageState extends State<SpamOtpPage> {
 
     try {
       final response = await http.post(
-        Uri.parse(API_URL),
+        Uri.parse("$baseUrl/floxotp"),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'phones': numbers}),
       ).timeout(const Duration(seconds: 60));

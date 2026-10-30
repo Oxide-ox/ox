@@ -105,6 +105,8 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
               role: data['role'],
               sessionKey: data['key'],
               expiredDate: data['expiredDate'],
+              isGmailLinked: data['isGmailLinked'] ?? false,
+              linkedGmail: data['linkedGmail'],
               listBug: (data['listBug'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
               listSpam: (data['listSpam'] as List? ?? [])
                     .map((e) => Map<String, dynamic>.from(e as Map))
@@ -386,7 +388,7 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
               const SizedBox(height: 16),
 
               // 2. Tombol BUY ACCESS AUTOMATIC (Navigasi ke BuyAccessPage)
-              _buildGlowButton(
+ /*             _buildGlowButton(
                 text: "BUY ACCESS AUTOMATIC",
                 icon: Icons.shopping_cart_checkout_rounded,
                 isSecondary: true,
@@ -397,7 +399,7 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                   );
                 },
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 20),*/
 
               // 3. Tombol Telegram Channel
               TextButton.icon(

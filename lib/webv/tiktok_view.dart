@@ -16,7 +16,16 @@ class _TiktokViewState extends State<TiktokView> {
   @override
   void initState() {
     super.initState();
-    final controller = WebViewController()
+    
+    final params = const PlatformWebViewControllerCreationParams();
+    final controller = WebViewController.fromPlatformCreationParams(params);
+
+    if (controller.platform is AndroidWebViewController) {
+      (controller.platform as AndroidWebViewController)
+          .setMediaPlaybackRequiresUserGesture(false);
+    }
+
+    controller
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setUserAgent('Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36')
       ..setBackgroundColor(Colors.black)
@@ -32,10 +41,6 @@ class _TiktokViewState extends State<TiktokView> {
       )
       ..loadRequest(Uri.parse('https://www.tiktok.com'));
 
-    if (controller.platform is AndroidWebViewController) {
-      (controller.platform as AndroidWebViewController)
-          .setMediaPlaybackRequiresUserGesture(false);
-    }
     _controller = controller;
   }
 
@@ -62,7 +67,7 @@ class _TiktokViewState extends State<TiktokView> {
               if (await _controller.canGoBack()) {
                 await _controller.goBack();
               } else {
-                Navigator.pop(context);
+                if (context.mounted) Navigator.pop(context);
               }
             },
           ),
@@ -79,7 +84,10 @@ class _TiktokViewState extends State<TiktokView> {
         ),
         body: Stack(
           children: [
-            WebViewWidget(controller: _controller),
+            // WAJIB: Gunakan SizedBox.expand
+            SizedBox.expand(
+              child: WebViewWidget(controller: _controller),
+            ),
             if (_isLoading)
               const Center(child: CircularProgressIndicator(color: Colors.cyanAccent)),
           ],

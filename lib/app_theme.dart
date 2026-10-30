@@ -833,3 +833,234 @@ class LayoutSettingsSheet extends StatelessWidget {
     );
   }
 }
+
+// =============================================================================
+// 8. WIDGET KARTU PILIHAN TEMA DENGAN ELEMEN VISUAL KHUSUS (3D, RETRO, COMIC, DLL)
+// =============================================================================
+class CustomThemePickerWidget extends StatelessWidget {
+  const CustomThemePickerWidget({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: themeModeNotifier,
+      builder: (context, currentMode, _) {
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // 0. CYBERPUNK (Default)
+            _buildStyledThemeCard(
+              modeIndex: 0,
+              currentMode: currentMode,
+              title: "Cyberpunk",
+              subtitle: "Neon & Dark Mode Vibes",
+              bgColor: const Color(0xFF090212),
+              borderColor: const Color(0xFFE6007E),
+              textColor: Colors.white,
+              decorationType: "cyber",
+            ),
+            const SizedBox(height: 16),
+
+            // 1. NEO BRUTALIST
+            _buildStyledThemeCard(
+              modeIndex: 1,
+              currentMode: currentMode,
+              title: "Neo Brutalist",
+              subtitle: "Solid Colors & Hard Edges",
+              bgColor: const Color(0xFFFF2B7A),
+              borderColor: Colors.black,
+              textColor: Colors.white,
+              decorationType: "neo",
+            ),
+            const SizedBox(height: 16),
+
+            // 2. POP ART
+            _buildStyledThemeCard(
+              modeIndex: 2,
+              currentMode: currentMode,
+              title: "Pop Art",
+              subtitle: "Vibrant Cyan & Magenta Dots",
+              bgColor: const Color(0xFF00E5FF),
+              borderColor: const Color(0xFFEC4899),
+              textColor: Colors.black,
+              decorationType: "pop",
+            ),
+            const SizedBox(height: 16),
+
+            // 3. 3D HOLOGRAPHIC
+            _buildStyledThemeCard(
+              modeIndex: 3,
+              currentMode: currentMode,
+              title: "3D Holographic",
+              subtitle: "Multi-layer Glow & Depth Illusion",
+              bgColor: const Color(0xFF051129),
+              borderColor: const Color(0xFF00F0FF),
+              textColor: const Color(0xFF00F0FF),
+              decorationType: "holo",
+            ),
+            const SizedBox(height: 16),
+
+            // 4. RETRO FUTURISM
+            _buildStyledThemeCard(
+              modeIndex: 4,
+              currentMode: currentMode,
+              title: "Retro Futurism",
+              subtitle: "80s Synthwave & Grid Aesthetics",
+              bgColor: const Color(0xFF1A0B2E),
+              borderColor: const Color(0xFFFF9900),
+              textColor: const Color(0xFFFF007F),
+              decorationType: "retro",
+            ),
+            const SizedBox(height: 16),
+
+            // 5. COMIC BOOK
+            _buildStyledThemeCard(
+              modeIndex: 5,
+              currentMode: currentMode,
+              title: "Comic Book",
+              subtitle: "Action Bold Text & Halftone Style",
+              bgColor: const Color(0xFFFFD700),
+              borderColor: Colors.black,
+              textColor: Colors.black,
+              decorationType: "comic",
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStyledThemeCard({
+    required int modeIndex,
+    required int currentMode,
+    required String title,
+    required String subtitle,
+    required Color bgColor,
+    required Color borderColor,
+    required Color textColor,
+    required String decorationType,
+  }) {
+    bool isActive = currentMode == modeIndex;
+
+    BoxDecoration boxDecoration;
+    List<Widget> extraElements = [];
+
+    if (decorationType == "holo") {
+      boxDecoration = BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor, width: isActive ? 2.0 : 1.0),
+        boxShadow: [
+          const BoxShadow(color: Color(0xFF00F0FF), blurRadius: 12, spreadRadius: -2, offset: Offset(0, 6)),
+          const BoxShadow(color: Color(0xFF7B2CBF), blurRadius: 12, spreadRadius: -2, offset: Offset(0, -6)),
+          if (isActive) const BoxShadow(color: Colors.white, blurRadius: 8),
+        ],
+      );
+      extraElements.add(
+        Positioned(
+          top: 8, right: 12,
+          child: Icon(Icons.layers_rounded, color: textColor.withOpacity(0.5), size: 18),
+        ),
+      );
+    } else if (decorationType == "neo" || decorationType == "comic") {
+      boxDecoration = BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.black, width: 3.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black,
+            offset: Offset(isActive ? 6 : 4, isActive ? 6 : 4),
+            blurRadius: 0,
+          ),
+        ],
+      );
+      extraElements.add(
+        Positioned(
+          right: 12, bottom: 8,
+          child: Text("POW!", style: TextStyle(color: Colors.black.withOpacity(0.3), fontWeight: FontWeight.w900, fontSize: 12)),
+        ),
+      );
+    } else if (decorationType == "retro") {
+      boxDecoration = BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor, width: 2.0),
+        boxShadow: [
+          BoxShadow(color: const Color(0xFFFF007F).withOpacity(0.4), blurRadius: isActive ? 15 : 6, spreadRadius: 1),
+        ],
+      );
+      extraElements.add(
+        Positioned(
+          right: 12, top: 12,
+          child: Icon(Icons.wb_sunny_rounded, color: borderColor.withOpacity(0.7), size: 18),
+        ),
+      );
+    } else if (decorationType == "pop") {
+      boxDecoration = BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 3.0),
+        boxShadow: [
+          const BoxShadow(color: Color(0xFFEC4899), offset: Offset(3, 3), blurRadius: 0),
+        ],
+      );
+    } else {
+      boxDecoration = BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor, width: 1.5),
+        boxShadow: isActive ? [BoxShadow(color: borderColor.withOpacity(0.6), blurRadius: 10)] : [],
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        themeModeNotifier.value = modeIndex;
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 250),
+        child: Stack(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              decoration: boxDecoration,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: textColor,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 16,
+                            letterSpacing: 1.1,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            color: textColor.withOpacity(0.8),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isActive)
+                    Icon(Icons.check_circle_rounded, color: textColor, size: 26),
+                ],
+              ),
+            ),
+            ...extraElements,
+          ],
+        ),
+      ),
+    );
+  }
+}

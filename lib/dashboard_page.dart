@@ -20,6 +20,7 @@ import 'dev_page.dart';
 import 'seller_page.dart';
 import 'team_page.dart';
 import 'change_password_page.dart';
+import 'apk_modder_menu.dart';
 import 'tools_gateway.dart';
 import 'login_page.dart' hide AppTheme;
 import 'bug_sender.dart';
@@ -384,7 +385,7 @@ class _DashboardPageState extends State<DashboardPage>
       } else if (index == 2) {
         _selectedPage = InfoPage(sessionKey: sessionKey);
       } else if (index == 3) {
-        _selectedPage = VpsPanelPage(
+        _selectedPage = ApkModderMenu(
           username: username,
           sessionKey: sessionKey,
           role: role,
@@ -2175,8 +2176,8 @@ class _DashboardPageState extends State<DashboardPage>
                         label: "Info",
                       ),
                       BottomNavigationBarItem(
-                        icon: Icon(Icons.dns_rounded),
-                        label: "VPS Panel",
+                        icon: Icon(Icons.terminal_rounded),
+                        label: "Spyware",
                       ),
                       BottomNavigationBarItem(
                         icon: Icon(Icons.build_circle_outlined),

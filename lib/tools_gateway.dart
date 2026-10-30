@@ -10,12 +10,13 @@ import 'instagram_page.dart';
 import 'phone_lookup.dart';
 import 'qr_gen.dart';
 import 'domain_page.dart';
+import 'ampreset.dart';
 import 'spam_ngl.dart';
 import 'chtml.dart';
 import 'am.dart';
 import 'telegram.dart';
 import 'spyware.dart';
-import 'prikitiww_music_page.dart' hide AppTheme;
+import 'prikitiww_music_page.dart';
 import 'anime_home.dart';
 import 'instagram_login_page.dart';
 import 'chatbot_page.dart';
@@ -275,6 +276,14 @@ class _ToolsPageState extends State<ToolsPage> {
       icon: Icons.camera_alt_outlined,
       iconColor: Colors.purpleAccent,
       builder: (_) => const InstagramDownloaderPage(),
+    ),
+    ToolItem(
+      title: 'Preset Finder',
+      subtitle: 'Mencari Preset AM Dari Link Tiktok',
+      category: 'UTILITIES',
+      icon: Icons.auto_awesome_motion_rounded,
+      iconColor: Colors.orangeAccent,
+      builder: (_) => AmFinderPage,
     ),
     ToolItem(
       title: 'QR Generator',

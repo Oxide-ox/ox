@@ -56,6 +56,7 @@ class DashboardPage extends StatefulWidget {
   final List<Map<String, dynamic>> listDoos;
   final List<dynamic> news;
   final bool isGmailLinked;
+  final String? linkedGmail;
 
   const DashboardPage({
     super.key,
@@ -72,6 +73,7 @@ class DashboardPage extends StatefulWidget {
     required this.sessionKey,
     required this.news,
     this.isGmailLinked = false,
+    this.linkedGmail,
   });
 
   @override
@@ -388,7 +390,7 @@ class _DashboardPageState extends State<DashboardPage>
         _selectedPage = ApkModderMenu(
           username: username,
           sessionKey: sessionKey,
-          role: role,
+          userRole: role,
         );
       } else if (index == 4) {
         _selectedPage = ToolsPage(

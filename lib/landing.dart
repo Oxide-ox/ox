@@ -105,8 +105,6 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
               role: data['role'],
               sessionKey: data['key'],
               expiredDate: data['expiredDate'],
-              isGmailLinked: data['isGmailLinked'] ?? false,
-              linkedGmail: data['linkedGmail'],
               listBug: (data['listBug'] as List? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
               listSpam: (data['listSpam'] as List? ?? [])
                     .map((e) => Map<String, dynamic>.from(e as Map))

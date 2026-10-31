@@ -16,6 +16,8 @@ class SplashScreen extends StatefulWidget {
   final List<Map<String, dynamic>> listGb;
   final List<Map<String, dynamic>> listDoos;
   final List<dynamic> news;
+  final bool isGmailLinked;
+  final String? linkedGmail;
 
   const SplashScreen({
     super.key,
@@ -31,6 +33,8 @@ class SplashScreen extends StatefulWidget {
     required this.listGb,
     required this.listDoos,
     required this.news,
+    this.isGmailLinked = false,
+    this.linkedGmail,
   });
 
   @override

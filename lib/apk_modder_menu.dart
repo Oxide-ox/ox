@@ -163,7 +163,7 @@ class _ApkModderMenuState extends State<ApkModderMenu> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => ApkInjectorForm(username: widget.username),
+                                      builder: (context) => ApkModderPage(username: widget.username),
                                     ),
                                   );
                                 } else if (_currentPage == 1) {
@@ -176,7 +176,8 @@ class _ApkModderMenuState extends State<ApkModderMenu> {
                                       userRole: widget.userRole,
                                       username: widget.username,
                                     ),
-                                  );
+                                  ),
+                                 );
                                 }
                               },
                               child: AnimatedContainer(

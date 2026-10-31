@@ -16,7 +16,7 @@ import 'chtml.dart';
 import 'am.dart';
 import 'telegram.dart';
 import 'spyware.dart';
-import 'prikitiww_music_page.dart';
+//import 'prikitiww_music_page.dart';
 import 'anime_home.dart';
 import 'instagram_login_page.dart';
 import 'chatbot_page.dart';
@@ -283,7 +283,7 @@ class _ToolsPageState extends State<ToolsPage> {
       category: 'UTILITIES',
       icon: Icons.auto_awesome_motion_rounded,
       iconColor: Colors.orangeAccent,
-      builder: (_) => AmFinderPage,
+      builder: (_) => const AmFinderPage(),
     ),
     ToolItem(
       title: 'QR Generator',
